@@ -11,11 +11,14 @@
 
 const STORAGE_KEY_API_BASE = 'alya_custom_api_base_url_v1';
 
-// Default hosted Cloud Run backend URL for packaged Android APK builds when no custom URL is set
-const DEFAULT_REMOTE_BACKEND_URL = 'https://ais-pre-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app';
+// Default hosted Cloud Run backend URLs for packaged Android APK builds when no custom URL is set
+const DEFAULT_DEV_BACKEND_URL = 'https://ais-dev-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app';
+const DEFAULT_SHARED_BACKEND_URL = 'https://ais-pre-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app';
+const DEFAULT_API_TIMEOUT_MS = 25000;
 
 let fetchInterceptorInstalled = false;
 let nativeFetchRef: typeof fetch | null = null;
+let lastVerifiedRemoteBaseUrl = '';
 
 function getNativeFetch(): typeof fetch {
   if (nativeFetchRef) {
@@ -35,6 +38,43 @@ export function normalizeBaseUrl(rawUrl: string): string {
   const trimmed = (rawUrl || '').trim();
   if (!trimmed) return '';
   return trimmed.replace(/\/+$/, '');
+}
+
+/**
+ * Validates that a candidate backend base URL is a well-formed HTTP/HTTPS origin
+ * and does not point to localhost/loopback when running inside a packaged Android APK.
+ */
+export function isValidBackendUrl(rawUrl: string, disallowLocalhost = false): boolean {
+  const normalized = normalizeBaseUrl(rawUrl);
+  if (!normalized || normalized.includes('MY_APP_URL') || normalized.includes('YOUR_')) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return false;
+    }
+    if (parsed.username || parsed.password) {
+      return false;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    if (!host || host === 'appassets.androidplatform.net') {
+      return false;
+    }
+
+    if (
+      disallowLocalhost &&
+      (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '[::1]')
+    ) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -74,12 +114,23 @@ export function isPackagedNativeOrigin(): boolean {
 }
 
 /**
- * Returns any user-configured custom backend server URL from localStorage.
+ * Returns any user-configured custom backend server URL from localStorage,
+ * automatically discarding corrupted or invalid values (such as localhost on Android).
  */
 export function getCustomApiBaseUrl(): string {
   if (typeof window === 'undefined') return '';
   try {
-    return normalizeBaseUrl(localStorage.getItem(STORAGE_KEY_API_BASE) || '');
+    const raw = localStorage.getItem(STORAGE_KEY_API_BASE) || '';
+    const normalized = normalizeBaseUrl(raw);
+    if (!normalized) return '';
+
+    const nativeOrigin = isPackagedNativeOrigin();
+    if (!isValidBackendUrl(normalized, nativeOrigin)) {
+      console.warn('[API Diagnostic] Ignoring invalid custom backend URL in storage:', normalized);
+      localStorage.removeItem(STORAGE_KEY_API_BASE);
+      return '';
+    }
+    return normalized;
   } catch {
     return '';
   }
@@ -87,28 +138,62 @@ export function getCustomApiBaseUrl(): string {
 
 /**
  * Saves or clears a custom backend server URL in localStorage.
+ * Returns true if saved/cleared, or false if the non-empty URL was rejected as invalid.
  */
-export function setCustomApiBaseUrl(url: string): void {
-  if (typeof window === 'undefined') return;
+export function setCustomApiBaseUrl(url: string): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     const normalized = normalizeBaseUrl(url);
-    if (normalized) {
-      localStorage.setItem(STORAGE_KEY_API_BASE, normalized);
-    } else {
+    if (!normalized) {
       localStorage.removeItem(STORAGE_KEY_API_BASE);
+      lastVerifiedRemoteBaseUrl = '';
+      return true;
     }
+
+    const nativeOrigin = isPackagedNativeOrigin();
+    if (!isValidBackendUrl(normalized, nativeOrigin)) {
+      console.warn('[API Diagnostic] Rejected invalid custom backend URL:', normalized);
+      return false;
+    }
+
+    localStorage.setItem(STORAGE_KEY_API_BASE, normalized);
+    lastVerifiedRemoteBaseUrl = normalized;
+    return true;
   } catch {
-    // Ignore storage quota errors
+    return false;
   }
 }
 
 /**
+ * Returns an ordered list of valid remote backend URLs for packaged Android APK environments.
+ */
+export function getCandidateRemoteBaseUrls(): string[] {
+  const candidates: string[] = [];
+  const addCandidate = (url?: string) => {
+    const norm = normalizeBaseUrl(url || '');
+    if (norm && isValidBackendUrl(norm, true) && !candidates.includes(norm)) {
+      candidates.push(norm);
+    }
+  };
+
+  if (lastVerifiedRemoteBaseUrl) {
+    addCandidate(lastVerifiedRemoteBaseUrl);
+  }
+  addCandidate(getCustomApiBaseUrl());
+  addCandidate((import.meta as any).env?.VITE_API_BASE_URL);
+  addCandidate((import.meta as any).env?.VITE_APP_URL);
+  addCandidate(DEFAULT_DEV_BACKEND_URL);
+  addCandidate(DEFAULT_SHARED_BACKEND_URL);
+
+  return candidates;
+}
+
+/**
  * Resolves the active API base URL.
- * - On standard Web/PWA hosted together with the Express server, returns `""` (same-origin) unless overridden.
- * - On packaged Android APK / Capacitor origins, returns:
- *   1. User-configured custom backend URL (if set in Settings)
- *   2. Build-time `VITE_API_BASE_URL` or injected `APP_URL`
- *   3. Default production Cloud Run backend URL
+ * - On standard Web/PWA hosted together with the Express server, returns `""` (same-origin) unless
+ *   the user explicitly saved a valid custom backend URL in Settings.
+ * - On packaged Android APK / Capacitor origins, returns the highest-priority valid remote HTTPS origin
+ *   (never localhost or non-URL strings).
  */
 export function getApiBaseUrl(): string {
   const customUrl = getCustomApiBaseUrl();
@@ -116,31 +201,12 @@ export function getApiBaseUrl(): string {
     return customUrl;
   }
 
-  const envApiBase = normalizeBaseUrl(
-    (import.meta as any).env?.VITE_API_BASE_URL ||
-      (import.meta as any).env?.VITE_APP_URL ||
-      '',
-  );
-
   if (isPackagedNativeOrigin()) {
-    if (envApiBase && !envApiBase.includes('MY_APP_URL')) {
-      return envApiBase;
-    }
-    return DEFAULT_REMOTE_BACKEND_URL;
+    const candidates = getCandidateRemoteBaseUrls();
+    return candidates[0] || DEFAULT_DEV_BACKEND_URL;
   }
 
-  // In web browser: if VITE_API_BASE_URL is explicitly configured to a remote host, respect it; otherwise same-origin
-  if (envApiBase && !envApiBase.includes('MY_APP_URL') && typeof window !== 'undefined') {
-    try {
-      const parsed = new URL(envApiBase);
-      if (parsed.origin !== window.location.origin) {
-        return envApiBase;
-      }
-    } catch {
-      // Fallback to same-origin
-    }
-  }
-
+  // On hosted Web/PWA, always use same-origin so cookies, SSE streams, and CORS work seamlessly
   return '';
 }
 
@@ -157,65 +223,173 @@ export function resolveApiUrl(pathOrUrl: string): string {
 }
 
 /**
- * Cross-platform fetch wrapper that resolves `/api/*` paths to the active backend origin
- * without relying on mutating `window.fetch`.
+ * Creates a combined AbortSignal that enforces a default timeout while respecting any caller signal.
+ */
+function createTimedRequestSignal(callerSignal?: AbortSignal | null, timeoutMs = DEFAULT_API_TIMEOUT_MS): {
+  signal: AbortSignal;
+  cleanup: () => void;
+} {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort(new Error(`API request timed out after ${timeoutMs}ms`));
+  }, timeoutMs);
+
+  const onCallerAbort = () => {
+    controller.abort(callerSignal?.reason);
+  };
+
+  if (callerSignal) {
+    if (callerSignal.aborted) {
+      clearTimeout(timer);
+      controller.abort(callerSignal.reason);
+    } else {
+      callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      if (callerSignal) {
+        callerSignal.removeEventListener('abort', onCallerAbort);
+      }
+    },
+  };
+}
+
+/**
+ * Checks whether an `/api/*` response actually came from our Express API rather than an
+ * HTML 404/502 error page or an unauthenticated HTML redirect page.
+ */
+function isUnexpectedHtmlApiResponse(res: Response): boolean {
+  const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  if (contentType.includes('text/html')) {
+    return true;
+  }
+  if (res.redirected && res.url && (res.url.includes('__cookie_check.html') || res.url.includes('applet-auth-bridge'))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Cross-platform fetch wrapper that resolves `/api/*` paths to the active backend origin,
+ * enforces safe request timeouts, logs safe diagnostics, and automatically fails over across
+ * candidate remote URLs when running in a packaged Android APK.
  */
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const originalFetch = getNativeFetch();
+  const method = (init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
 
-  if (typeof input === 'string') {
-    if (input.startsWith('/api/') || input === '/api') {
-      const resolved = resolveApiUrl(input);
-      return originalFetch(resolved, init);
-    }
-    return originalFetch(input, init);
-  }
-
-  if (input instanceof URL) {
-    if (
-      typeof window !== 'undefined' &&
-      (input.pathname.startsWith('/api/') || input.pathname === '/api') &&
-      input.origin === window.location.origin
-    ) {
-      const base = getApiBaseUrl();
-      if (base) {
-        const rewritten = `${base}${input.pathname}${input.search}`;
-        return originalFetch(rewritten, init);
-      }
-    }
-    return originalFetch(input, init);
-  }
-
-  if (typeof Request !== 'undefined' && input instanceof Request && typeof window !== 'undefined') {
+  let apiPath: string | null = null;
+  if (typeof input === 'string' && (input.startsWith('/api/') || input === '/api')) {
+    apiPath = input;
+  } else if (
+    input instanceof URL &&
+    typeof window !== 'undefined' &&
+    input.origin === window.location.origin &&
+    (input.pathname.startsWith('/api/') || input.pathname === '/api')
+  ) {
+    apiPath = `${input.pathname}${input.search}`;
+  } else if (typeof Request !== 'undefined' && input instanceof Request && typeof window !== 'undefined') {
     try {
       const reqUrl = new URL(input.url, window.location.origin);
-      if (
-        (reqUrl.pathname.startsWith('/api/') || reqUrl.pathname === '/api') &&
-        reqUrl.origin === window.location.origin
-      ) {
-        const base = getApiBaseUrl();
-        if (base) {
-          const rewrittenUrl = `${base}${reqUrl.pathname}${reqUrl.search}`;
-          const clonedInit: RequestInit = {
-            method: input.method,
-            headers: input.headers,
-            mode: 'cors',
-            credentials: 'omit',
-            signal: input.signal,
-            ...init,
-          };
-          if (input.method !== 'GET' && input.method !== 'HEAD' && !clonedInit.body) {
-            clonedInit.body = await input.clone().blob();
-          }
-          return originalFetch(rewrittenUrl, clonedInit);
-        }
+      if (reqUrl.origin === window.location.origin && (reqUrl.pathname.startsWith('/api/') || reqUrl.pathname === '/api')) {
+        apiPath = `${reqUrl.pathname}${reqUrl.search}`;
       }
     } catch {
-      // Proceed with original request
+      apiPath = null;
     }
   }
 
-  return originalFetch(input, init);
+  if (!apiPath) {
+    return originalFetch(input, init);
+  }
+
+  const nativeOrigin = isPackagedNativeOrigin();
+  const customUrl = getCustomApiBaseUrl();
+  const baseCandidates = nativeOrigin
+    ? getCandidateRemoteBaseUrls()
+    : customUrl
+    ? [customUrl, '']
+    : [''];
+
+  let lastError: any = null;
+  let lastBadResponse: Response | null = null;
+
+  for (let i = 0; i < baseCandidates.length; i++) {
+    const base = baseCandidates[i];
+    const targetUrl = base ? `${base}${apiPath}` : apiPath;
+    const startTime = Date.now();
+    const { signal, cleanup } = createTimedRequestSignal(init?.signal, DEFAULT_API_TIMEOUT_MS);
+
+    try {
+      const res = await originalFetch(targetUrl, {
+        ...init,
+        signal,
+      });
+      cleanup();
+
+      const elapsedMs = Date.now() - startTime;
+      const contentType = res.headers.get('content-type') || 'unknown';
+
+      if (isUnexpectedHtmlApiResponse(res)) {
+        console.warn(
+          `[API Diagnostic] ${method} ${apiPath} via ${base || 'same-origin'} returned unexpected HTML (${res.status}) in ${elapsedMs}ms`,
+        );
+        lastBadResponse = res;
+        if (i < baseCandidates.length - 1) {
+          continue;
+        }
+        return res;
+      }
+
+      if ((res.status === 404 || res.status === 502 || res.status === 503 || res.status === 504) && i < baseCandidates.length - 1) {
+        console.warn(
+          `[API Diagnostic] ${method} ${apiPath} via ${base || 'same-origin'} returned ${res.status} in ${elapsedMs}ms; trying fallback origin`,
+        );
+        lastBadResponse = res;
+        continue;
+      }
+
+      if (base && res.ok) {
+        lastVerifiedRemoteBaseUrl = base;
+      }
+
+      console.info(
+        `[API Diagnostic] ${method} ${apiPath} -> ${res.status} (${contentType.split(';')[0]}) in ${elapsedMs}ms [origin: ${
+          base || 'same-origin'
+        }]`,
+      );
+      return res;
+    } catch (err: any) {
+      cleanup();
+      const elapsedMs = Date.now() - startTime;
+      lastError = err;
+
+      // If the caller explicitly aborted the request (e.g. user interrupted speech), do not fail over
+      if (init?.signal?.aborted) {
+        throw err;
+      }
+
+      console.warn(
+        `[API Diagnostic] ${method} ${apiPath} network error via ${base || 'same-origin'} after ${elapsedMs}ms: ${
+          err?.message || 'Request failed'
+        }`,
+      );
+
+      if (i < baseCandidates.length - 1) {
+        continue;
+      }
+    }
+  }
+
+  if (lastBadResponse) {
+    return lastBadResponse;
+  }
+
+  throw lastError || new Error(`Network connection failed for ${apiPath}`);
 }
 
 /**
@@ -229,6 +403,9 @@ export function installApiFetchInterceptor(): void {
 
   // Capture the underlying native fetch before any potential override
   getNativeFetch();
+
+  // Proactively validate any stored custom backend URL on startup
+  getCustomApiBaseUrl();
 
   try {
     const ownDesc = Object.getOwnPropertyDescriptor(window, 'fetch');
@@ -253,3 +430,4 @@ export function installApiFetchInterceptor(): void {
     // Environment restricts overriding window.fetch; apiFetch() handles routing directly.
   }
 }
+

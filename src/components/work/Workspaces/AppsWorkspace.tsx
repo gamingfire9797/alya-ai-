@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { WorkAppId, WorkNote, WorkTask, TerminalEntry, CompanionCharacter } from '../../../types';
+import { apiFetch } from '../../../utils/apiConfig';
 
 interface AppsWorkspaceProps {
   character: CompanionCharacter;
@@ -285,7 +286,7 @@ export const AppsWorkspace: React.FC<AppsWorkspaceProps> = ({
     setIsResearching(true);
 
     try {
-      const res = await fetch('/api/work/search', {
+      const res = await apiFetch('/api/work/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -11470,9 +11470,12 @@ var import_client = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
 * Security Note: No server secrets or GEMINI_API_KEY values are ever embedded here.
 */
 var STORAGE_KEY_API_BASE = "alya_custom_api_base_url_v1";
-var DEFAULT_REMOTE_BACKEND_URL = "https://ais-pre-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app";
+var DEFAULT_DEV_BACKEND_URL = "https://ais-dev-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app";
+var DEFAULT_SHARED_BACKEND_URL = "https://ais-pre-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app";
+var DEFAULT_API_TIMEOUT_MS$1 = 25e3;
 var fetchInterceptorInstalled = false;
 var nativeFetchRef = null;
+var lastVerifiedRemoteBaseUrl = "";
 function getNativeFetch() {
 	if (nativeFetchRef) return nativeFetchRef;
 	if (typeof window !== "undefined" && typeof window.fetch === "function") {
@@ -11490,6 +11493,25 @@ function normalizeBaseUrl(rawUrl) {
 	return trimmed.replace(/\/+$/, "");
 }
 /**
+* Validates that a candidate backend base URL is a well-formed HTTP/HTTPS origin
+* and does not point to localhost/loopback when running inside a packaged Android APK.
+*/
+function isValidBackendUrl(rawUrl, disallowLocalhost = false) {
+	const normalized = normalizeBaseUrl(rawUrl);
+	if (!normalized || normalized.includes("MY_APP_URL") || normalized.includes("YOUR_")) return false;
+	try {
+		const parsed = new URL(normalized);
+		if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+		if (parsed.username || parsed.password) return false;
+		const host = parsed.hostname.toLowerCase();
+		if (!host || host === "appassets.androidplatform.net") return false;
+		if (disallowLocalhost && (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]")) return false;
+		return true;
+	} catch {
+		return false;
+	}
+}
+/**
 * Detects whether the frontend is executing inside a packaged Capacitor/Android WebView
 * or local asset origin where Express is not running on the same origin.
 */
@@ -11505,96 +11527,173 @@ function isPackagedNativeOrigin() {
 	return false;
 }
 /**
-* Returns any user-configured custom backend server URL from localStorage.
+* Returns any user-configured custom backend server URL from localStorage,
+* automatically discarding corrupted or invalid values (such as localhost on Android).
 */
 function getCustomApiBaseUrl() {
 	if (typeof window === "undefined") return "";
 	try {
-		return normalizeBaseUrl(localStorage.getItem(STORAGE_KEY_API_BASE) || "");
+		const normalized = normalizeBaseUrl(localStorage.getItem(STORAGE_KEY_API_BASE) || "");
+		if (!normalized) return "";
+		if (!isValidBackendUrl(normalized, isPackagedNativeOrigin())) {
+			console.warn("[API Diagnostic] Ignoring invalid custom backend URL in storage:", normalized);
+			localStorage.removeItem(STORAGE_KEY_API_BASE);
+			return "";
+		}
+		return normalized;
 	} catch {
 		return "";
 	}
 }
 /**
 * Saves or clears a custom backend server URL in localStorage.
+* Returns true if saved/cleared, or false if the non-empty URL was rejected as invalid.
 */
 function setCustomApiBaseUrl(url) {
-	if (typeof window === "undefined") return;
+	if (typeof window === "undefined") return false;
 	try {
 		const normalized = normalizeBaseUrl(url);
-		if (normalized) localStorage.setItem(STORAGE_KEY_API_BASE, normalized);
-		else localStorage.removeItem(STORAGE_KEY_API_BASE);
-	} catch {}
+		if (!normalized) {
+			localStorage.removeItem(STORAGE_KEY_API_BASE);
+			lastVerifiedRemoteBaseUrl = "";
+			return true;
+		}
+		if (!isValidBackendUrl(normalized, isPackagedNativeOrigin())) {
+			console.warn("[API Diagnostic] Rejected invalid custom backend URL:", normalized);
+			return false;
+		}
+		localStorage.setItem(STORAGE_KEY_API_BASE, normalized);
+		lastVerifiedRemoteBaseUrl = normalized;
+		return true;
+	} catch {
+		return false;
+	}
+}
+/**
+* Returns an ordered list of valid remote backend URLs for packaged Android APK environments.
+*/
+function getCandidateRemoteBaseUrls() {
+	const candidates = [];
+	const addCandidate = (url) => {
+		const norm = normalizeBaseUrl(url || "");
+		if (norm && isValidBackendUrl(norm, true) && !candidates.includes(norm)) candidates.push(norm);
+	};
+	if (lastVerifiedRemoteBaseUrl) addCandidate(lastVerifiedRemoteBaseUrl);
+	addCandidate(getCustomApiBaseUrl());
+	addCandidate("");
+	addCandidate("https://ais-dev-y7i5w4adihz6rn7hgkovjj-893936621001.asia-east1.run.app");
+	addCandidate(DEFAULT_DEV_BACKEND_URL);
+	addCandidate(DEFAULT_SHARED_BACKEND_URL);
+	return candidates;
 }
 /**
 * Resolves the active API base URL.
-* - On standard Web/PWA hosted together with the Express server, returns `""` (same-origin) unless overridden.
-* - On packaged Android APK / Capacitor origins, returns:
-*   1. User-configured custom backend URL (if set in Settings)
-*   2. Build-time `VITE_API_BASE_URL` or injected `APP_URL`
-*   3. Default production Cloud Run backend URL
+* - On standard Web/PWA hosted together with the Express server, returns `""` (same-origin) unless
+*   the user explicitly saved a valid custom backend URL in Settings.
+* - On packaged Android APK / Capacitor origins, returns the highest-priority valid remote HTTPS origin
+*   (never localhost or non-URL strings).
 */
 function getApiBaseUrl() {
 	const customUrl = getCustomApiBaseUrl();
 	if (customUrl) return customUrl;
-	const envApiBase = normalizeBaseUrl("Ga@@098765");
-	if (isPackagedNativeOrigin()) {
-		if (envApiBase && !envApiBase.includes("MY_APP_URL")) return envApiBase;
-		return DEFAULT_REMOTE_BACKEND_URL;
-	}
-	if (envApiBase && !envApiBase.includes("MY_APP_URL") && typeof window !== "undefined") try {
-		if (new URL(envApiBase).origin !== window.location.origin) return envApiBase;
-	} catch {}
+	if (isPackagedNativeOrigin()) return getCandidateRemoteBaseUrls()[0] || DEFAULT_DEV_BACKEND_URL;
 	return "";
 }
 /**
-* Resolves a relative `/api/...` path into a full URL when needed.
+* Creates a combined AbortSignal that enforces a default timeout while respecting any caller signal.
 */
-function resolveApiUrl(pathOrUrl) {
-	if (!pathOrUrl) return pathOrUrl;
-	if (pathOrUrl.startsWith("/api/") || pathOrUrl === "/api") {
-		const base = getApiBaseUrl();
-		return base ? `${base}${pathOrUrl}` : pathOrUrl;
+function createTimedRequestSignal(callerSignal, timeoutMs = DEFAULT_API_TIMEOUT_MS$1) {
+	const controller = new AbortController();
+	const timer = setTimeout(() => {
+		controller.abort(/* @__PURE__ */ new Error(`API request timed out after ${timeoutMs}ms`));
+	}, timeoutMs);
+	const onCallerAbort = () => {
+		controller.abort(callerSignal?.reason);
+	};
+	if (callerSignal) {
+		if (callerSignal.aborted) {
+			clearTimeout(timer);
+			controller.abort(callerSignal.reason);
+		} else callerSignal.addEventListener("abort", onCallerAbort, { once: true });
 	}
-	return pathOrUrl;
+	return {
+		signal: controller.signal,
+		cleanup: () => {
+			clearTimeout(timer);
+			if (callerSignal) callerSignal.removeEventListener("abort", onCallerAbort);
+		}
+	};
 }
 /**
-* Cross-platform fetch wrapper that resolves `/api/*` paths to the active backend origin
-* without relying on mutating `window.fetch`.
+* Checks whether an `/api/*` response actually came from our Express API rather than an
+* HTML 404/502 error page or an unauthenticated HTML redirect page.
+*/
+function isUnexpectedHtmlApiResponse(res) {
+	if ((res.headers.get("content-type") || "").toLowerCase().includes("text/html")) return true;
+	if (res.redirected && res.url && (res.url.includes("__cookie_check.html") || res.url.includes("applet-auth-bridge"))) return true;
+	return false;
+}
+/**
+* Cross-platform fetch wrapper that resolves `/api/*` paths to the active backend origin,
+* enforces safe request timeouts, logs safe diagnostics, and automatically fails over across
+* candidate remote URLs when running in a packaged Android APK.
 */
 async function apiFetch(input, init) {
 	const originalFetch = getNativeFetch();
-	if (typeof input === "string") {
-		if (input.startsWith("/api/") || input === "/api") return originalFetch(resolveApiUrl(input), init);
-		return originalFetch(input, init);
-	}
-	if (input instanceof URL) {
-		if (typeof window !== "undefined" && (input.pathname.startsWith("/api/") || input.pathname === "/api") && input.origin === window.location.origin) {
-			const base = getApiBaseUrl();
-			if (base) return originalFetch(`${base}${input.pathname}${input.search}`, init);
-		}
-		return originalFetch(input, init);
-	}
-	if (typeof Request !== "undefined" && input instanceof Request && typeof window !== "undefined") try {
+	const method = (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+	let apiPath = null;
+	if (typeof input === "string" && (input.startsWith("/api/") || input === "/api")) apiPath = input;
+	else if (input instanceof URL && typeof window !== "undefined" && input.origin === window.location.origin && (input.pathname.startsWith("/api/") || input.pathname === "/api")) apiPath = `${input.pathname}${input.search}`;
+	else if (typeof Request !== "undefined" && input instanceof Request && typeof window !== "undefined") try {
 		const reqUrl = new URL(input.url, window.location.origin);
-		if ((reqUrl.pathname.startsWith("/api/") || reqUrl.pathname === "/api") && reqUrl.origin === window.location.origin) {
-			const base = getApiBaseUrl();
-			if (base) {
-				const rewrittenUrl = `${base}${reqUrl.pathname}${reqUrl.search}`;
-				const clonedInit = {
-					method: input.method,
-					headers: input.headers,
-					mode: "cors",
-					credentials: "omit",
-					signal: input.signal,
-					...init
-				};
-				if (input.method !== "GET" && input.method !== "HEAD" && !clonedInit.body) clonedInit.body = await input.clone().blob();
-				return originalFetch(rewrittenUrl, clonedInit);
+		if (reqUrl.origin === window.location.origin && (reqUrl.pathname.startsWith("/api/") || reqUrl.pathname === "/api")) apiPath = `${reqUrl.pathname}${reqUrl.search}`;
+	} catch {
+		apiPath = null;
+	}
+	if (!apiPath) return originalFetch(input, init);
+	const nativeOrigin = isPackagedNativeOrigin();
+	const customUrl = getCustomApiBaseUrl();
+	const baseCandidates = nativeOrigin ? getCandidateRemoteBaseUrls() : customUrl ? [customUrl, ""] : [""];
+	let lastError = null;
+	let lastBadResponse = null;
+	for (let i = 0; i < baseCandidates.length; i++) {
+		const base = baseCandidates[i];
+		const targetUrl = base ? `${base}${apiPath}` : apiPath;
+		const startTime = Date.now();
+		const { signal, cleanup } = createTimedRequestSignal(init?.signal, DEFAULT_API_TIMEOUT_MS$1);
+		try {
+			const res = await originalFetch(targetUrl, {
+				...init,
+				signal
+			});
+			cleanup();
+			const elapsedMs = Date.now() - startTime;
+			const contentType = res.headers.get("content-type") || "unknown";
+			if (isUnexpectedHtmlApiResponse(res)) {
+				console.warn(`[API Diagnostic] ${method} ${apiPath} via ${base || "same-origin"} returned unexpected HTML (${res.status}) in ${elapsedMs}ms`);
+				lastBadResponse = res;
+				if (i < baseCandidates.length - 1) continue;
+				return res;
 			}
+			if ((res.status === 404 || res.status === 502 || res.status === 503 || res.status === 504) && i < baseCandidates.length - 1) {
+				console.warn(`[API Diagnostic] ${method} ${apiPath} via ${base || "same-origin"} returned ${res.status} in ${elapsedMs}ms; trying fallback origin`);
+				lastBadResponse = res;
+				continue;
+			}
+			if (base && res.ok) lastVerifiedRemoteBaseUrl = base;
+			console.info(`[API Diagnostic] ${method} ${apiPath} -> ${res.status} (${contentType.split(";")[0]}) in ${elapsedMs}ms [origin: ${base || "same-origin"}]`);
+			return res;
+		} catch (err) {
+			cleanup();
+			const elapsedMs = Date.now() - startTime;
+			lastError = err;
+			if (init?.signal?.aborted) throw err;
+			console.warn(`[API Diagnostic] ${method} ${apiPath} network error via ${base || "same-origin"} after ${elapsedMs}ms: ${err?.message || "Request failed"}`);
+			if (i < baseCandidates.length - 1) continue;
 		}
-	} catch {}
-	return originalFetch(input, init);
+	}
+	if (lastBadResponse) return lastBadResponse;
+	throw lastError || /* @__PURE__ */ new Error(`Network connection failed for ${apiPath}`);
 }
 /**
 * Installs a transparent `window.fetch` interceptor when the host environment permits it.
@@ -11605,6 +11704,7 @@ function installApiFetchInterceptor() {
 	if (typeof window === "undefined" || fetchInterceptorInstalled) return;
 	fetchInterceptorInstalled = true;
 	getNativeFetch();
+	getCustomApiBaseUrl();
 	try {
 		const ownDesc = Object.getOwnPropertyDescriptor(window, "fetch");
 		const protoDesc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window) || {}, "fetch");
@@ -20260,7 +20360,7 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 									setSupportError(null);
 									try {
 										const anonymousUserId = localStorage.getItem("alya_client_usr_id") || "usr_anonymous";
-										const res = await fetch("/api/support/submit-ticket", {
+										const res = await apiFetch("/api/support/submit-ticket", {
 											method: "POST",
 											headers: { "Content-Type": "application/json" },
 											body: JSON.stringify({
@@ -23719,7 +23819,10 @@ var SettingsScreen = ({ settings, onUpdateSettings, onResetSettings, hasGeminiKe
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 										type: "button",
 										onClick: () => {
-											setCustomApiBaseUrl(backendUrlInput);
+											if (!setCustomApiBaseUrl(backendUrlInput)) {
+												setBackendSaveStatus("Invalid backend URL. Enter a valid http:// or https:// server URL (localhost is not supported on Android APK).");
+												return;
+											}
 											setBackendUrlInput(getCustomApiBaseUrl());
 											setBackendSaveStatus(backendUrlInput.trim() ? "Custom backend server URL saved." : "Reset to default cloud backend server.");
 										},
@@ -23728,7 +23831,7 @@ var SettingsScreen = ({ settings, onUpdateSettings, onResetSettings, hasGeminiKe
 									})]
 								}),
 								backendSaveStatus && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-									className: "text-[10px] text-emerald-300",
+									className: `text-[10px] ${backendSaveStatus.startsWith("Invalid") ? "text-rose-400" : "text-emerald-300"}`,
 									children: backendSaveStatus
 								})
 							]
@@ -39417,7 +39520,7 @@ var AppsWorkspace = ({ character, userApiKey, onAskAlya, onSaveToFile }) => {
 		if (!researchTopic.trim()) return;
 		setIsResearching(true);
 		try {
-			const data = await (await fetch("/api/work/search", {
+			const data = await (await apiFetch("/api/work/search", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -41003,7 +41106,8 @@ function App() {
 					})
 				});
 				if (activeTurnIdRef.current !== turnId) return;
-				if (streamRes.ok && streamRes.body) {
+				const streamContentType = (streamRes.headers.get("content-type") || "").toLowerCase();
+				if (streamRes.ok && streamRes.body && streamContentType.includes("text/event-stream")) {
 					setIsThinking(false);
 					setIsStreaming(true);
 					VoiceLatencyTracker.record("aiFirstChunk");
@@ -41039,6 +41143,7 @@ function App() {
 					let botText = "";
 					let botEmotion = "normal";
 					let streamBuffer = "";
+					let streamServerError = null;
 					const botMsgId = `bot-${Date.now()}`;
 					setMessages((prev) => [...prev, {
 						id: botMsgId,
@@ -41058,6 +41163,14 @@ function App() {
 							if (!line.startsWith("data: ")) continue;
 							try {
 								const data = JSON.parse(line.slice(6));
+								if (data.error && !botText.trim()) {
+									streamServerError = {
+										message: data.error,
+										errorType: data.errorType,
+										retryable: data.retryable
+									};
+									break;
+								}
 								if (data.emotion) {
 									botEmotion = data.emotion;
 									setExpression(data.emotion);
@@ -41076,6 +41189,7 @@ function App() {
 								}
 							} catch (_) {}
 						}
+						if (streamServerError) break;
 					}
 					if (activeTurnIdRef.current !== turnId) {
 						try {
@@ -41084,8 +41198,23 @@ function App() {
 						return;
 					}
 					setIsStreaming(false);
+					if (streamServerError && !botText.trim()) {
+						setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+						try {
+							await reader.cancel();
+						} catch (_) {}
+						const sseErr = new Error(streamServerError.message);
+						sseErr.errorType = streamServerError.errorType;
+						sseErr.retryable = streamServerError.retryable;
+						sseErr.isFromServer = true;
+						throw sseErr;
+					}
+					if (!botText.trim()) {
+						setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+						throw new Error("Streaming response ended without content.");
+					}
 					VoiceLatencyTracker.record("aiResponseComplete");
-					const finalReply = botText.trim() || (character === "jarvis" ? "Understood." : "I see!");
+					const finalReply = botText.trim();
 					setMessages((prev) => {
 						const next = prev.map((m) => m.id === botMsgId ? {
 							...m,
@@ -41108,7 +41237,8 @@ function App() {
 				}
 			} catch (streamErr) {
 				if (turnAbortController.signal.aborted || activeTurnIdRef.current !== turnId) return;
-				console.warn("Streaming fallback active:", streamErr);
+				if (streamErr?.retryable === false) throw streamErr;
+				console.warn("[Chat Diagnostic] Streaming fallback to /api/chat active:", streamErr?.message || streamErr);
 			}
 			if (activeTurnIdRef.current !== turnId) return;
 			const res = await apiFetch("/api/chat", {
@@ -41133,34 +41263,21 @@ function App() {
 				})
 			});
 			if (activeTurnIdRef.current !== turnId) return;
+			if (!(res.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
+				const nonJsonErr = /* @__PURE__ */ new Error(`Backend server returned an unexpected non-JSON response (HTTP ${res.status}). Verify your Active API Server URL in Settings.`);
+				nonJsonErr.errorType = "invalid_response";
+				nonJsonErr.retryable = res.status >= 500;
+				throw nonJsonErr;
+			}
 			const data = await res.json();
 			setIsThinking(false);
 			VoiceLatencyTracker.record("aiResponseComplete");
 			if ((!res.ok || data.error) && !data.reply) {
-				if (autoFeaturesRef.current.autoRetry && retryCount < 1) {
-					setTimeout(() => {
-						if (activeTurnIdRef.current === turnId) handleSendMessage(cleanInput, imageAttachment, retryCount + 1);
-					}, 1200);
-					return;
-				}
-				const errorText = data.error || "Connection error. Please try again.";
-				const errorMsg = {
-					id: `err-${Date.now()}`,
-					role: character,
-					text: errorText,
-					timestamp: TimeEngine.formatChatTimestamp(),
-					isError: true,
-					emotion: "concerned"
-				};
-				setMessages((prev) => {
-					const next = [...prev, errorMsg];
-					Storage.saveMessages(character, next);
-					return next;
-				});
-				setExpression("concerned");
-				isProcessingVoiceRef.current = false;
-				scheduleResumeAutoListening(turnId, 800);
-				return;
+				const apiErr = new Error(data.error || `AI request failed with HTTP ${res.status}.`);
+				apiErr.errorType = data.errorType || "api_error";
+				apiErr.retryable = data.retryable !== void 0 ? Boolean(data.retryable) : res.status >= 500 || res.status === 429;
+				apiErr.isFromServer = true;
+				throw apiErr;
 			}
 			const botReply = data.reply || (character === "jarvis" ? "Understood." : "I see!");
 			const botEmotion = data.emotion || "normal";
@@ -41219,17 +41336,27 @@ function App() {
 			if (turnAbortController.signal.aborted || activeTurnIdRef.current !== turnId) return;
 			setIsThinking(false);
 			setIsStreaming(false);
-			if (autoFeaturesRef.current.autoRetry && retryCount < 2) {
+			const isRetryable = err?.retryable !== false;
+			console.warn("[Chat Diagnostic] AI request failed:", {
+				errorType: err?.errorType || "network_or_runtime",
+				retryable: isRetryable,
+				retryCount,
+				message: err?.message || String(err)
+			});
+			if (isRetryable && autoFeaturesRef.current.autoRetry && retryCount < 2) {
 				setTimeout(() => {
 					if (activeTurnIdRef.current === turnId) handleSendMessage(cleanInput, imageAttachment, retryCount + 1);
 				}, 1200);
 				return;
 			}
 			isProcessingVoiceRef.current = false;
+			setExpression("concerned");
+			const rawErrorText = typeof err?.message === "string" && err.message.trim().length > 0 ? err.message.trim() : "Unable to reach the AI backend server. Please verify your internet connection or API configuration in Settings.";
+			const displayErrorText = retryCount > 0 ? `Automatic recovery failed after ${retryCount} ${retryCount === 1 ? "retry" : "retries"}: ${rawErrorText}` : rawErrorText;
 			const errorMsg = {
 				id: `err-${Date.now()}`,
 				role: character,
-				text: "The AI connection had a momentary glitch. Automatic recovery active.",
+				text: displayErrorText,
 				timestamp: TimeEngine.formatChatTimestamp(),
 				isError: true,
 				emotion: "concerned"

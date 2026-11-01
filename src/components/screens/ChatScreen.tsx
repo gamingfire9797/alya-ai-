@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { ChatMessage, ExpressionType, CompanionCharacter, RecognitionState } from '../../types';
+import { apiFetch } from '../../utils/apiConfig';
 
 interface ChatScreenProps {
   messages: ChatMessage[];
@@ -276,7 +277,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                   setSupportError(null);
                   try {
                     const anonymousUserId = localStorage.getItem('alya_client_usr_id') || 'usr_anonymous';
-                    const res = await fetch('/api/support/submit-ticket', {
+                    const res = await apiFetch('/api/support/submit-ticket', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({

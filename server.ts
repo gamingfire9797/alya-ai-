@@ -33,12 +33,22 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-const apiKey = process.env.GEMINI_API_KEY;
-let ai: GoogleGenAI | null = null;
+function sanitizeApiKey(raw?: string): string {
+  if (!raw || typeof raw !== 'string') return '';
+  const trimmed = raw.trim().replace(/^['"]+|['"]+$/g, '').trim();
+  if (!trimmed || trimmed === 'MY_GEMINI_API_KEY' || trimmed === 'undefined' || trimmed === 'null') {
+    return '';
+  }
+  return trimmed;
+}
 
-if (apiKey) {
-  ai = new GoogleGenAI({
-    apiKey,
+function getServerApiKey(): string {
+  return sanitizeApiKey(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+}
+
+function createGeminiClient(key: string): GoogleGenAI {
+  return new GoogleGenAI({
+    apiKey: key,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -48,21 +58,45 @@ if (apiKey) {
 }
 
 function getAIInstance(customKey?: string): GoogleGenAI | null {
-  if (customKey && typeof customKey === 'string' && customKey.trim().length > 10) {
+  const cleanCustom = sanitizeApiKey(customKey);
+  if (cleanCustom.length > 10) {
     try {
-      return new GoogleGenAI({
-        apiKey: customKey.trim(),
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
+      return createGeminiClient(cleanCustom);
     } catch {
-      return ai;
+      // Fall through to server key
     }
   }
-  return ai;
+  const serverKey = getServerApiKey();
+  if (serverKey.length > 10) {
+    try {
+      return createGeminiClient(serverKey);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function getAICandidates(
+  customKey?: string,
+): Array<{ client: GoogleGenAI; source: 'client_custom_key' | 'server_env_key' }> {
+  const candidates: Array<{ client: GoogleGenAI; source: 'client_custom_key' | 'server_env_key' }> = [];
+  const cleanCustom = sanitizeApiKey(customKey);
+  const serverKey = getServerApiKey();
+
+  if (cleanCustom.length > 10) {
+    try {
+      candidates.push({ client: createGeminiClient(cleanCustom), source: 'client_custom_key' });
+    } catch {}
+  }
+
+  if (serverKey.length > 10 && serverKey !== cleanCustom) {
+    try {
+      candidates.push({ client: createGeminiClient(serverKey), source: 'server_env_key' });
+    } catch {}
+  }
+
+  return candidates;
 }
 
 function formatGeminiContents(
@@ -127,7 +161,13 @@ function formatGeminiContents(
   return contents;
 }
 
-function getGeminiErrorMessage(error: any): { message: string; errorType: string; isHighDemand: boolean } {
+function getGeminiErrorMessage(error: any): {
+  message: string;
+  errorType: string;
+  isHighDemand: boolean;
+  statusCode: number;
+  retryable: boolean;
+} {
   let rawMsg = error?.message || String(error || '');
   try {
     const parsed = typeof rawMsg === 'string' ? JSON.parse(rawMsg) : rawMsg;
@@ -145,6 +185,27 @@ function getGeminiErrorMessage(error: any): { message: string; errorType: string
     ' ' +
     String(error || '')
   ).toLowerCase();
+
+  if (
+    errString.includes('api_key_invalid') ||
+    errString.includes('api key not valid') ||
+    errString.includes('access_token_type_unsupported') ||
+    errString.includes('unauthenticated') ||
+    errString.includes('401') ||
+    errString.includes('403') ||
+    errString.includes('unauthorized') ||
+    errString.includes('permission_denied') ||
+    errString.includes('not valid')
+  ) {
+    return {
+      message:
+        'Gemini API authentication failed (API key not valid). Please configure a valid GEMINI_API_KEY in server secrets or enter a valid Gemini API key in Settings.',
+      errorType: 'invalid_key',
+      isHighDemand: false,
+      statusCode: 401,
+      retryable: false,
+    };
+  }
 
   const isHighDemand =
     errString.includes('503') ||
@@ -165,38 +226,31 @@ function getGeminiErrorMessage(error: any): { message: string; errorType: string
     errString.includes('rate-limit')
   ) {
     return {
-      message: 'Gemini API quota temporarily constrained. Seamless fallback active.',
+      message:
+        'Gemini API quota or rate limit reached (HTTP 429). Please wait a moment and try again, or add your own Gemini API key in Settings.',
       errorType: 'quota',
       isHighDemand: true,
-    };
-  }
-
-  if (
-    errString.includes('api_key_invalid') ||
-    errString.includes('api key not valid') ||
-    errString.includes('403') ||
-    errString.includes('unauthorized') ||
-    errString.includes('not valid')
-  ) {
-    return {
-      message: 'Gemini API key is invalid. Please check your key in Settings.',
-      errorType: 'invalid_key',
-      isHighDemand: false,
+      statusCode: 429,
+      retryable: true,
     };
   }
 
   if (isHighDemand) {
     return {
-      message: 'Gemini model is currently experiencing temporary high demand.',
+      message: 'Gemini AI model is temporarily overloaded or timed out (HTTP 503). Please try again in a moment.',
       errorType: 'high_demand',
       isHighDemand: true,
+      statusCode: 503,
+      retryable: true,
     };
   }
 
   return {
-    message: rawMsg || 'Failed to connect to AI engine.',
+    message: rawMsg || 'Failed to connect to Gemini AI engine.',
     errorType: 'general',
     isHighDemand: false,
+    statusCode: 502,
+    retryable: true,
   };
 }
 
@@ -511,11 +565,11 @@ async function generateGeminiContentWithFastFallback(
     contents: any;
     config?: any;
   },
-  timeoutMs = 10000,
+  timeoutMs = 15000,
 ): Promise<any> {
   const modelsToTry = [
-    { model: 'gemini-3.8-flash', timeoutMs: 10000, thinkingLevel: ThinkingLevel.LOW },
-    { model: 'gemini-3.1-flash-lite', timeoutMs: 8000, thinkingLevel: undefined },
+    { model: 'gemini-3.8-flash', timeoutMs: 15000, thinkingLevel: ThinkingLevel.LOW },
+    { model: 'gemini-3.1-flash-lite', timeoutMs: 12000, thinkingLevel: undefined },
   ];
 
   let lastError: any;
@@ -550,16 +604,22 @@ async function generateGeminiContentWithFastFallback(
 
       const result: any = await Promise.race([generatePromise, timeoutPromise]);
       if (result && result.text) {
-        console.log(`[AI Perf] Content generated with ${model} in ${Date.now() - t0}ms`);
+        console.log(`[AI Diagnostic] Content generated with ${model} in ${Date.now() - t0}ms`);
         return result;
       }
     } catch (err: any) {
       lastError = err;
-      console.warn(`[AI Fallback] ${model} failed after ${Date.now() - t0}ms:`, err?.message?.slice(0, 100));
+      const errInfo = getGeminiErrorMessage(err);
+      console.warn(
+        `[AI Diagnostic] Model ${model} failed after ${Date.now() - t0}ms (type=${errInfo.errorType}, status=${errInfo.statusCode})`,
+      );
+      if (errInfo.errorType === 'invalid_key') {
+        break;
+      }
     }
   }
 
-  throw lastError;
+  throw lastError || new Error('Gemini content generation failed across all candidate models.');
 }
 
 // Streaming generator for live token responses with ThinkingLevel.LOW and sub-3s first-token speed
@@ -576,11 +636,12 @@ async function* generateGeminiStreamWithFastFallback(
   },
 ): AsyncGenerator<{ text: string }> {
   const modelsToTry = [
-    { model: 'gemini-3.8-flash', timeoutMs: 10000, thinkingLevel: ThinkingLevel.LOW },
-    { model: 'gemini-3.1-flash-lite', timeoutMs: 8000, thinkingLevel: undefined },
+    { model: 'gemini-3.8-flash', timeoutMs: 15000, thinkingLevel: ThinkingLevel.LOW },
+    { model: 'gemini-3.1-flash-lite', timeoutMs: 12000, thinkingLevel: undefined },
   ];
 
   let anyChunkYielded = false;
+  let lastError: any = null;
 
   for (const { model, timeoutMs, thinkingLevel } of modelsToTry) {
     const t0 = Date.now();
@@ -620,28 +681,25 @@ async function* generateGeminiStreamWithFastFallback(
       }
 
       if (anyChunkYielded) {
-        console.log(`[AI Perf] Stream completed with ${model} in ${Date.now() - t0}ms`);
+        console.log(`[AI Diagnostic] Stream completed with ${model} in ${Date.now() - t0}ms`);
         return;
       }
     } catch (err: any) {
-      console.warn(`[AI Fallback] Stream ${model} failed after ${Date.now() - t0}ms:`, err?.message?.slice(0, 100));
+      lastError = err;
+      const errInfo = getGeminiErrorMessage(err);
+      console.warn(
+        `[AI Diagnostic] Stream ${model} failed after ${Date.now() - t0}ms (type=${errInfo.errorType}, status=${errInfo.statusCode})`,
+      );
       if (anyChunkYielded) {
         return;
+      }
+      if (errInfo.errorType === 'invalid_key') {
+        break;
       }
     }
   }
 
-  // Graceful synthetic stream fallback so stream never abruptly breaks
-  const character = options.character === 'jarvis' ? 'jarvis' : 'alya';
-  const fallback = generateContextualCompanionResponse(
-    character,
-    options.message || '',
-    options.userName || 'friend',
-    options.languageMode || 'english',
-    options.timeContext,
-  );
-
-  yield { text: `[${fallback.emotion}] ${fallback.reply}` };
+  throw lastError || new Error('Gemini stream failed without yielding tokens.');
 }
 
 // In-memory TTS Cache
@@ -692,10 +750,11 @@ app.get('/api/time', (req, res) => {
 
 // API Health / Status
 app.get(['/api/status', '/api/health'], (req, res) => {
+  const serverKey = getServerApiKey();
   res.json({
     status: 'online',
     character: 'Alya & Jarvis Dual Engine',
-    hasGeminiKey: !!apiKey,
+    hasGeminiKey: Boolean(serverKey),
     models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash-lite-tts'],
     serverYear: new Date().getFullYear(),
   });
@@ -1060,13 +1119,13 @@ app.post('/api/chat', async (req, res) => {
       timeContext,
       languageMode = 'english',
       imageAttachment,
-    } = req.body;
+    } = req.body || {};
 
     const userKey = clientApiKey || altClientApiKey || (req.headers['x-gemini-api-key'] as string);
-    const activeAI = getAIInstance(userKey);
+    const candidates = getAICandidates(userKey);
 
     if ((!message || typeof message !== 'string') && !imageAttachment) {
-      res.status(400).json({ error: 'Message or image is required' });
+      res.status(400).json({ error: 'Message or image is required', errorType: 'validation', retryable: false });
       return;
     }
     const cleanMsg = (message || '').trim() || 'Inspect this image and explain what is visible.';
@@ -1077,18 +1136,15 @@ app.post('/api/chat', async (req, res) => {
       userId: req.body?.userId,
     });
 
-    if (!activeAI) {
-      const offlineReply = generateContextualCompanionResponse(
-        character === 'jarvis' ? 'jarvis' : 'alya',
-        cleanMsg,
-        userName,
-        languageMode,
-        timeContext,
-      );
-      res.json({
-        reply: offlineReply.reply,
-        emotion: offlineReply.emotion,
-        isOfflineMode: true,
+    if (candidates.length === 0) {
+      console.warn('[AI Diagnostic] /api/chat failed: no GEMINI_API_KEY configured in server environment or request.');
+      res.status(503).json({
+        error:
+          'No Gemini API key is configured. Please set GEMINI_API_KEY in the server environment or enter your Gemini API key in Settings.',
+        errorType: 'missing_key',
+        isHighDemand: false,
+        retryable: false,
+        success: false,
       });
       return;
     }
@@ -1114,67 +1170,68 @@ app.post('/api/chat', async (req, res) => {
     const contents = formatGeminiContents(history, cleanMsg, imageAttachment);
 
     const resultPromise = (async () => {
-      const response = await generateGeminiContentWithFastFallback(
-        activeAI,
-        {
-          contents,
-          config: {
-            systemInstruction,
-          },
-        },
-        10000,
-      );
+      let lastCandidateError: any;
+      for (const candidate of candidates) {
+        try {
+          const response = await generateGeminiContentWithFastFallback(
+            candidate.client,
+            {
+              contents,
+              config: {
+                systemInstruction,
+              },
+            },
+            15000,
+          );
 
-      const rawText = response.text || '';
-      let emotion = 'normal';
-      let cleanText = rawText;
+          const rawText = response.text || '';
+          let emotion = 'normal';
+          let cleanText = rawText;
 
-      const emotionMatch = rawText.match(
-        /^\[(normal|happy|laughing|shy|curious|thinking|surprised|calm|concerned)\]\s*/i,
-      );
-      if (emotionMatch) {
-        emotion = emotionMatch[1].toLowerCase();
-        cleanText = rawText.replace(emotionMatch[0], '').trim();
+          const emotionMatch = rawText.match(
+            /^\[(normal|happy|laughing|shy|curious|thinking|surprised|calm|concerned)\]\s*/i,
+          );
+          if (emotionMatch) {
+            emotion = emotionMatch[1].toLowerCase();
+            cleanText = rawText.replace(emotionMatch[0], '').trim();
+          }
+
+          return {
+            reply: cleanText,
+            emotion,
+            success: true,
+          };
+        } catch (candidateErr: any) {
+          lastCandidateError = candidateErr;
+          console.warn(`[AI Diagnostic] /api/chat candidate (${candidate.source}) failed.`);
+        }
       }
-
-      return {
-        reply: cleanText,
-        emotion,
-        success: true,
-      };
+      throw lastCandidateError || new Error('All AI key candidates failed.');
     })();
 
     inFlightRequests.set(dedupKey, resultPromise);
     setTimeout(() => inFlightRequests.delete(dedupKey), 8000);
 
-    const parsedResult = await resultPromise;
-    inFlightRequests.delete(dedupKey);
-
-    res.json(parsedResult);
+    try {
+      const parsedResult = await resultPromise;
+      inFlightRequests.delete(dedupKey);
+      res.json(parsedResult);
+    } catch (innerErr) {
+      inFlightRequests.delete(dedupKey);
+      throw innerErr;
+    }
   } catch (error: any) {
     const errInfo = getGeminiErrorMessage(error);
-    const character = req.body?.character === 'jarvis' ? 'jarvis' : 'alya';
-    const userName = req.body?.userName || 'friend';
-    const cleanMsg = typeof req.body?.message === 'string' ? req.body.message : '';
-    const languageMode = req.body?.languageMode || 'english';
-    const timeContext = req.body?.timeContext;
-
-    const fallbackResponse = generateContextualCompanionResponse(
-      character,
-      cleanMsg,
-      userName,
-      languageMode,
-      timeContext,
+    console.error(
+      `[AI Diagnostic] /api/chat error response: type=${errInfo.errorType}, status=${errInfo.statusCode}, retryable=${errInfo.retryable}`,
     );
 
-    res.json({
-      reply: fallbackResponse.reply,
-      emotion: fallbackResponse.emotion,
-      isHighDemand: true,
-      retryable: true,
-      success: true,
-      fromFallback: true,
+    res.status(errInfo.statusCode || 502).json({
       error: errInfo.message,
+      errorType: errInfo.errorType,
+      isHighDemand: errInfo.isHighDemand,
+      retryable: errInfo.retryable,
+      success: false,
     });
   }
 });
@@ -1193,10 +1250,10 @@ app.post('/api/chat/stream', async (req, res) => {
       timeContext,
       languageMode = 'english',
       imageAttachment,
-    } = req.body;
+    } = req.body || {};
 
     if ((!message || typeof message !== 'string') && !imageAttachment) {
-      res.status(400).json({ error: 'Message or image is required' });
+      res.status(400).json({ error: 'Message or image is required', errorType: 'validation', retryable: false });
       return;
     }
 
@@ -1207,19 +1264,20 @@ app.post('/api/chat/stream', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     const userKey = clientApiKey || altClientApiKey || (req.headers['x-gemini-api-key'] as string);
-    const activeAI = getAIInstance(userKey);
+    const candidates = getAICandidates(userKey);
 
-    if (!activeAI) {
-      const offlineReply = generateContextualCompanionResponse(
-        character === 'jarvis' ? 'jarvis' : 'alya',
-        effectiveMessage,
-        userName,
-        languageMode,
-        timeContext,
+    if (candidates.length === 0) {
+      console.warn('[AI Diagnostic] /api/chat/stream failed: no GEMINI_API_KEY configured.');
+      res.write(
+        `data: ${JSON.stringify({
+          error:
+            'No Gemini API key is configured. Please set GEMINI_API_KEY in the server environment or enter your Gemini API key in Settings.',
+          errorType: 'missing_key',
+          isHighDemand: false,
+          retryable: false,
+          done: true,
+        })}\n\n`,
       );
-      res.write(`data: ${JSON.stringify({ emotion: offlineReply.emotion })}\n\n`);
-      res.write(`data: ${JSON.stringify({ chunk: offlineReply.reply })}\n\n`);
-      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
       return;
     }
@@ -1234,91 +1292,109 @@ app.post('/api/chat/stream', async (req, res) => {
 
     const contents = formatGeminiContents(history, effectiveMessage, imageAttachment);
 
-    const responseStream = generateGeminiStreamWithFastFallback(activeAI, {
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.75,
-      },
-      character,
-      userName,
-      message,
-      languageMode,
-      timeContext,
-    });
+    let streamSucceeded = false;
+    let lastStreamError: any = null;
 
-    let accumulated = '';
-    let emotionDetected = false;
-    const streamStart = Date.now();
-    let firstTokenLogged = false;
+    for (const candidate of candidates) {
+      try {
+        const responseStream = generateGeminiStreamWithFastFallback(candidate.client, {
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.75,
+          },
+          character,
+          userName,
+          message,
+          languageMode,
+          timeContext,
+        });
 
-    for await (const chunk of responseStream) {
-      const textChunk = chunk.text || '';
-      if (!textChunk) continue;
+        let accumulated = '';
+        let emotionDetected = false;
+        const streamStart = Date.now();
+        let firstTokenLogged = false;
 
-      if (!firstTokenLogged) {
-        firstTokenLogged = true;
-        console.log(`[Stream Perf] Server Time-to-First-Token: ${Date.now() - streamStart}ms`);
-      }
+        for await (const chunk of responseStream) {
+          const textChunk = chunk.text || '';
+          if (!textChunk) continue;
 
-      if (!emotionDetected) {
-        accumulated += textChunk;
-        const trimmed = accumulated.trimStart();
-
-        // If response does not start with '[', it has no emotion tag; stream accumulated text immediately!
-        if (!trimmed.startsWith('[')) {
-          emotionDetected = true;
-          res.write(`data: ${JSON.stringify({ emotion: 'normal' })}\n\n`);
-          res.write(`data: ${JSON.stringify({ chunk: accumulated })}\n\n`);
-          accumulated = '';
-          continue;
-        }
-
-        const emotionMatch = trimmed.match(
-          /^\[(normal|happy|laughing|shy|curious|thinking|surprised|calm|concerned)\]\s*/i,
-        );
-        if (emotionMatch) {
-          emotionDetected = true;
-          const detectedEmotion = emotionMatch[1].toLowerCase();
-          res.write(`data: ${JSON.stringify({ emotion: detectedEmotion })}\n\n`);
-          const remainingText = trimmed.slice(emotionMatch[0].length);
-          if (remainingText) {
-            res.write(`data: ${JSON.stringify({ chunk: remainingText })}\n\n`);
+          if (!firstTokenLogged) {
+            firstTokenLogged = true;
+            console.log(
+              `[AI Diagnostic] Stream Time-to-First-Token (${candidate.source}): ${Date.now() - streamStart}ms`,
+            );
           }
-          accumulated = '';
-          continue;
+
+          if (!emotionDetected) {
+            accumulated += textChunk;
+            const trimmed = accumulated.trimStart();
+
+            if (!trimmed.startsWith('[')) {
+              emotionDetected = true;
+              res.write(`data: ${JSON.stringify({ emotion: 'normal' })}\n\n`);
+              res.write(`data: ${JSON.stringify({ chunk: accumulated })}\n\n`);
+              accumulated = '';
+              continue;
+            }
+
+            const emotionMatch = trimmed.match(
+              /^\[(normal|happy|laughing|shy|curious|thinking|surprised|calm|concerned)\]\s*/i,
+            );
+            if (emotionMatch) {
+              emotionDetected = true;
+              const detectedEmotion = emotionMatch[1].toLowerCase();
+              res.write(`data: ${JSON.stringify({ emotion: detectedEmotion })}\n\n`);
+              const remainingText = trimmed.slice(emotionMatch[0].length);
+              if (remainingText) {
+                res.write(`data: ${JSON.stringify({ chunk: remainingText })}\n\n`);
+              }
+              accumulated = '';
+              continue;
+            }
+
+            if (accumulated.length > 15) {
+              emotionDetected = true;
+              res.write(`data: ${JSON.stringify({ emotion: 'normal' })}\n\n`);
+              res.write(`data: ${JSON.stringify({ chunk: accumulated })}\n\n`);
+              accumulated = '';
+              continue;
+            }
+          } else {
+            res.write(`data: ${JSON.stringify({ chunk: textChunk })}\n\n`);
+          }
         }
 
-        // If prefix length exceeds 15 without a closing ']', treat as normal text
-        if (accumulated.length > 15) {
-          emotionDetected = true;
-          res.write(`data: ${JSON.stringify({ emotion: 'normal' })}\n\n`);
+        if (accumulated) {
           res.write(`data: ${JSON.stringify({ chunk: accumulated })}\n\n`);
-          accumulated = '';
-          continue;
         }
-      } else {
-        res.write(`data: ${JSON.stringify({ chunk: textChunk })}\n\n`);
+
+        console.log(`[AI Diagnostic] Stream total duration (${candidate.source}): ${Date.now() - streamStart}ms`);
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        streamSucceeded = true;
+        break;
+      } catch (candidateErr: any) {
+        lastStreamError = candidateErr;
+        console.warn(`[AI Diagnostic] /api/chat/stream candidate (${candidate.source}) failed.`);
       }
     }
 
-    console.log(`[Stream Perf] Server total stream duration: ${Date.now() - streamStart}ms`);
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
+    if (!streamSucceeded) {
+      throw lastStreamError || new Error('All AI stream candidates failed.');
+    }
   } catch (error: any) {
     const errInfo = getGeminiErrorMessage(error);
-    const character = req.body?.character === 'jarvis' ? 'jarvis' : 'alya';
-    const fallbackMessage = errInfo.isHighDemand
-      ? (character === 'jarvis'
-          ? "The neural engine is temporarily constrained. Standing by."
-          : "The AI network is busy right now! I'm still right here with you.")
-      : errInfo.message;
+    console.error(
+      `[AI Diagnostic] /api/chat/stream error response: type=${errInfo.errorType}, status=${errInfo.statusCode}, retryable=${errInfo.retryable}`,
+    );
 
     res.write(
       `data: ${JSON.stringify({
-        chunk: fallbackMessage,
-        isHighDemand: errInfo.isHighDemand,
         error: errInfo.message,
+        errorType: errInfo.errorType,
+        isHighDemand: errInfo.isHighDemand,
+        retryable: errInfo.retryable,
         done: true,
       })}\n\n`,
     );

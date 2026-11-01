@@ -656,7 +656,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setCustomApiBaseUrl(backendUrlInput);
+                  const savedOk = setCustomApiBaseUrl(backendUrlInput);
+                  if (!savedOk) {
+                    setBackendSaveStatus(
+                      'Invalid backend URL. Enter a valid http:// or https:// server URL (localhost is not supported on Android APK).',
+                    );
+                    return;
+                  }
                   setBackendUrlInput(getCustomApiBaseUrl());
                   setBackendSaveStatus(
                     backendUrlInput.trim()
@@ -669,7 +675,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 Save
               </button>
             </div>
-            {backendSaveStatus && <p className="text-[10px] text-emerald-300">{backendSaveStatus}</p>}
+            {backendSaveStatus && (
+              <p
+                className={`text-[10px] ${
+                  backendSaveStatus.startsWith('Invalid') ? 'text-rose-400' : 'text-emerald-300'
+                }`}
+              >
+                {backendSaveStatus}
+              </p>
+            )}
           </div>
         </div>
 

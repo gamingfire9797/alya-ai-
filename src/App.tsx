@@ -1047,7 +1047,8 @@ export default function App() {
 
         if (activeTurnIdRef.current !== turnId) return;
 
-        if (streamRes.ok && streamRes.body) {
+        const streamContentType = (streamRes.headers.get('content-type') || '').toLowerCase();
+        if (streamRes.ok && streamRes.body && streamContentType.includes('text/event-stream')) {
           setIsThinking(false);
           setIsStreaming(true);
           VoiceLatencyTracker.record('aiFirstChunk');
@@ -1087,6 +1088,7 @@ export default function App() {
           let botText = '';
           let botEmotion: ExpressionType = 'normal';
           let streamBuffer = '';
+          let streamServerError: { message: string; errorType?: string; retryable?: boolean } | null = null;
           const botMsgId = `bot-${Date.now()}`;
 
           // Create placeholder message in state
@@ -1114,6 +1116,14 @@ export default function App() {
               if (!line.startsWith('data: ')) continue;
               try {
                 const data = JSON.parse(line.slice(6));
+                if (data.error && !botText.trim()) {
+                  streamServerError = {
+                    message: data.error,
+                    errorType: data.errorType,
+                    retryable: data.retryable,
+                  };
+                  break;
+                }
                 if (data.emotion) {
                   botEmotion = data.emotion;
                   setExpression(data.emotion);
@@ -1135,6 +1145,10 @@ export default function App() {
                 }
               } catch (_) {}
             }
+
+            if (streamServerError) {
+              break;
+            }
           }
 
           if (activeTurnIdRef.current !== turnId) {
@@ -1145,9 +1159,27 @@ export default function App() {
           }
 
           setIsStreaming(false);
+
+          if (streamServerError && !botText.trim()) {
+            setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+            try {
+              await reader.cancel();
+            } catch (_) {}
+            const sseErr: any = new Error(streamServerError.message);
+            sseErr.errorType = streamServerError.errorType;
+            sseErr.retryable = streamServerError.retryable;
+            sseErr.isFromServer = true;
+            throw sseErr;
+          }
+
+          if (!botText.trim()) {
+            setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+            throw new Error('Streaming response ended without content.');
+          }
+
           VoiceLatencyTracker.record('aiResponseComplete');
 
-          const finalReply = botText.trim() || (character === 'jarvis' ? 'Understood.' : 'I see!');
+          const finalReply = botText.trim();
           setMessages((prev) => {
             const next = prev.map((m) =>
               m.id === botMsgId
@@ -1180,7 +1212,10 @@ export default function App() {
         if (turnAbortController.signal.aborted || activeTurnIdRef.current !== turnId) {
           return;
         }
-        console.warn('Streaming fallback active:', streamErr);
+        if (streamErr?.retryable === false) {
+          throw streamErr;
+        }
+        console.warn('[Chat Diagnostic] Streaming fallback to /api/chat active:', streamErr?.message || streamErr);
       }
 
       if (activeTurnIdRef.current !== turnId) return;
@@ -1210,41 +1245,27 @@ export default function App() {
 
       if (activeTurnIdRef.current !== turnId) return;
 
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      if (!contentType.includes('application/json')) {
+        const nonJsonErr: any = new Error(
+          `Backend server returned an unexpected non-JSON response (HTTP ${res.status}). Verify your Active API Server URL in Settings.`,
+        );
+        nonJsonErr.errorType = 'invalid_response';
+        nonJsonErr.retryable = res.status >= 500;
+        throw nonJsonErr;
+      }
+
       const data = await res.json();
       setIsThinking(false);
       VoiceLatencyTracker.record('aiResponseComplete');
 
-      // Handle server error only when no reply is available
+      // Handle server error when no valid reply is returned
       if ((!res.ok || data.error) && !data.reply) {
-        if (autoFeaturesRef.current.autoRetry && retryCount < 1) {
-          setTimeout(() => {
-            if (activeTurnIdRef.current === turnId) {
-              handleSendMessage(cleanInput, imageAttachment, retryCount + 1);
-            }
-          }, 1200);
-          return;
-        }
-
-        const errorText = data.error || 'Connection error. Please try again.';
-        const errorMsg: ChatMessage = {
-          id: `err-${Date.now()}`,
-          role: character,
-          text: errorText,
-          timestamp: TimeEngine.formatChatTimestamp(),
-          isError: true,
-          emotion: 'concerned',
-        };
-
-        setMessages((prev) => {
-          const next = [...prev, errorMsg];
-          Storage.saveMessages(character, next);
-          return next;
-        });
-
-        setExpression('concerned');
-        isProcessingVoiceRef.current = false;
-        scheduleResumeAutoListening(turnId, 800);
-        return;
+        const apiErr: any = new Error(data.error || `AI request failed with HTTP ${res.status}.`);
+        apiErr.errorType = data.errorType || 'api_error';
+        apiErr.retryable = data.retryable !== undefined ? Boolean(data.retryable) : res.status >= 500 || res.status === 429;
+        apiErr.isFromServer = true;
+        throw apiErr;
       }
 
       const botReply = data.reply || (character === 'jarvis' ? 'Understood.' : 'I see!');
@@ -1314,7 +1335,15 @@ export default function App() {
       setIsThinking(false);
       setIsStreaming(false);
 
-      if (autoFeaturesRef.current.autoRetry && retryCount < 2) {
+      const isRetryable = err?.retryable !== false;
+      console.warn('[Chat Diagnostic] AI request failed:', {
+        errorType: err?.errorType || 'network_or_runtime',
+        retryable: isRetryable,
+        retryCount,
+        message: err?.message || String(err),
+      });
+
+      if (isRetryable && autoFeaturesRef.current.autoRetry && retryCount < 2) {
         setTimeout(() => {
           if (activeTurnIdRef.current === turnId) {
             handleSendMessage(cleanInput, imageAttachment, retryCount + 1);
@@ -1324,11 +1353,22 @@ export default function App() {
       }
 
       isProcessingVoiceRef.current = false;
+      setExpression('concerned');
+
+      const rawErrorText =
+        typeof err?.message === 'string' && err.message.trim().length > 0
+          ? err.message.trim()
+          : 'Unable to reach the AI backend server. Please verify your internet connection or API configuration in Settings.';
+
+      const displayErrorText =
+        retryCount > 0
+          ? `Automatic recovery failed after ${retryCount} ${retryCount === 1 ? 'retry' : 'retries'}: ${rawErrorText}`
+          : rawErrorText;
 
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: character,
-        text: 'The AI connection had a momentary glitch. Automatic recovery active.',
+        text: displayErrorText,
         timestamp: TimeEngine.formatChatTimestamp(),
         isError: true,
         emotion: 'concerned',

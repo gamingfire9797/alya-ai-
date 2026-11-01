@@ -3,16 +3,35 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 
+function sanitizePublicHttpUrl(raw?: string): string {
+  const trimmed = (raw || '').trim();
+  if (!trimmed || trimmed.includes('MY_APP_URL') || trimmed.includes('YOUR_')) {
+    return '';
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return '';
+    }
+    if (parsed.username || parsed.password) {
+      return '';
+    }
+    return parsed.origin + parsed.pathname.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
-  const safeAppUrl =
-    env.VITE_API_BASE_URL ||
-    (env.APP_URL && !env.APP_URL.includes('MY_APP_URL') ? env.APP_URL : '');
+  const safeApiBaseUrl = sanitizePublicHttpUrl(env.VITE_API_BASE_URL);
+  const safeAppUrl = safeApiBaseUrl || sanitizePublicHttpUrl(env.APP_URL);
 
   return {
     base: './',
     plugins: [react(), tailwindcss()],
     define: {
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(safeApiBaseUrl),
       'import.meta.env.VITE_APP_URL': JSON.stringify(safeAppUrl),
     },
     resolve: {
@@ -29,4 +48,5 @@ export default defineConfig(({mode}) => {
     },
   };
 });
+
 
