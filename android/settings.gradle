@@ -17,6 +17,3 @@ dependencyResolutionManagement {
 rootProject.name = "Alya AI Companion"
 include ':app'
 
-if (file('capacitor.settings.gradle').exists()) {
-    apply from: 'capacitor.settings.gradle'
-}

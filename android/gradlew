@@ -21,12 +21,17 @@ fi
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
 if [ ! -f "$CLASSPATH" ]; then
-    if command -v gradle >/dev/null 2>&1; then
-        exec gradle "$@"
-    fi
-    echo "Downloading gradle-wrapper.jar..."
+    echo "Downloading gradle-wrapper.jar for Gradle 8.5..."
     mkdir -p "$APP_HOME/gradle/wrapper"
-    curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o "$CLASSPATH"
+    if ! curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o "$CLASSPATH"; then
+        rm -f "$CLASSPATH"
+        if command -v gradle >/dev/null 2>&1; then
+            exec gradle "$@"
+        fi
+        echo "ERROR: Failed to bootstrap gradle-wrapper.jar and no system 'gradle' found." >&2
+        exit 1
+    fi
 fi
 
 exec "$JAVACMD" $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "-Dorg.gradle.appname=gradlew" -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+
