@@ -1,0 +1,7 @@
+{
+  "name": "Alya AI Companion",
+  "description": "Expressive anime-inspired AI voice companion with Hinglish & Hindi conversation, Android app launching, screen awareness, and floating avatar.",
+  "requestFramePermissions": ["microphone", "camera", "display-capture"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

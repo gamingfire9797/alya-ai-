@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+server.js
+
+# Environment variables & secrets (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Runtime data & logs
+data/admin_store.json
+*.log
+npm-debug.log*
+
+# Android / Gradle build artifacts & local SDK paths
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/app/debug/
+android/local.properties
+android/captures/
+android/.idea/
+*.iml
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Signing keys & keystores (never commit)
+*.jks
+*.keystore
+key.properties
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
