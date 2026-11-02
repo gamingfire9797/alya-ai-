@@ -1212,7 +1212,13 @@ export default function App() {
         if (turnAbortController.signal.aborted || activeTurnIdRef.current !== turnId) {
           return;
         }
-        if (streamErr?.retryable === false) {
+        if (
+          streamErr?.retryable === false ||
+          streamErr?.errorType === 'backend_unreachable' ||
+          streamErr?.errorType === 'offline' ||
+          streamErr?.errorType === 'invalid_key' ||
+          streamErr?.errorType === 'missing_key'
+        ) {
           throw streamErr;
         }
         console.warn('[Chat Diagnostic] Streaming fallback to /api/chat active:', streamErr?.message || streamErr);
@@ -1335,7 +1341,7 @@ export default function App() {
       setIsThinking(false);
       setIsStreaming(false);
 
-      const isRetryable = err?.retryable !== false;
+      const isRetryable = err?.retryable === true;
       console.warn('[Chat Diagnostic] AI request failed:', {
         errorType: err?.errorType || 'network_or_runtime',
         retryable: isRetryable,
@@ -1723,6 +1729,7 @@ export default function App() {
             micErrorMessage={micErrorMessage}
             onClearMicError={() => setMicErrorMessage(null)}
             userName={currentUser?.displayName || settings.userName}
+            onOpenSettings={() => setCurrentScreen('settings')}
           />
         );
 

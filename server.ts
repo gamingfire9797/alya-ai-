@@ -186,10 +186,20 @@ function getGeminiErrorMessage(error: any): {
     String(error || '')
   ).toLowerCase();
 
+  if (errString.includes('access_token_type_unsupported')) {
+    return {
+      message:
+        'Server GEMINI_API_KEY is not a valid Gemini Developer API key (expected key starting with "AIza..."). Please update GEMINI_API_KEY in server secrets or enter your personal Gemini API key in Settings.',
+      errorType: 'invalid_key',
+      isHighDemand: false,
+      statusCode: 401,
+      retryable: false,
+    };
+  }
+
   if (
     errString.includes('api_key_invalid') ||
     errString.includes('api key not valid') ||
-    errString.includes('access_token_type_unsupported') ||
     errString.includes('unauthenticated') ||
     errString.includes('401') ||
     errString.includes('403') ||
@@ -237,10 +247,10 @@ function getGeminiErrorMessage(error: any): {
 
   if (isHighDemand) {
     return {
-      message: 'Gemini AI model is temporarily overloaded or timed out (HTTP 503). Please try again in a moment.',
+      message: 'Gemini AI model is temporarily overloaded or timed out. Please try again in a moment.',
       errorType: 'high_demand',
       isHighDemand: true,
-      statusCode: 503,
+      statusCode: 429,
       retryable: true,
     };
   }
@@ -249,7 +259,7 @@ function getGeminiErrorMessage(error: any): {
     message: rawMsg || 'Failed to connect to Gemini AI engine.',
     errorType: 'general',
     isHighDemand: false,
-    statusCode: 502,
+    statusCode: 500,
     retryable: true,
   };
 }
@@ -570,6 +580,7 @@ async function generateGeminiContentWithFastFallback(
   const modelsToTry = [
     { model: 'gemini-3.8-flash', timeoutMs: 15000, thinkingLevel: ThinkingLevel.LOW },
     { model: 'gemini-3.1-flash-lite', timeoutMs: 12000, thinkingLevel: undefined },
+    { model: 'gemini-2.5-flash', timeoutMs: 12000, thinkingLevel: undefined },
   ];
 
   let lastError: any;
@@ -638,6 +649,7 @@ async function* generateGeminiStreamWithFastFallback(
   const modelsToTry = [
     { model: 'gemini-3.8-flash', timeoutMs: 15000, thinkingLevel: ThinkingLevel.LOW },
     { model: 'gemini-3.1-flash-lite', timeoutMs: 12000, thinkingLevel: undefined },
+    { model: 'gemini-2.5-flash', timeoutMs: 12000, thinkingLevel: undefined },
   ];
 
   let anyChunkYielded = false;
@@ -751,11 +763,13 @@ app.get('/api/time', (req, res) => {
 // API Health / Status
 app.get(['/api/status', '/api/health'], (req, res) => {
   const serverKey = getServerApiKey();
+  const hasValidFormatKey = Boolean(serverKey && serverKey.startsWith('AIza') && serverKey.length >= 20);
   res.json({
     status: 'online',
     character: 'Alya & Jarvis Dual Engine',
-    hasGeminiKey: Boolean(serverKey),
-    models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash-lite-tts'],
+    hasGeminiKey: hasValidFormatKey,
+    serverKeyConfigured: Boolean(serverKey),
+    models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-3.8-flash-lite-tts'],
     serverYear: new Date().getFullYear(),
   });
 });
@@ -1138,7 +1152,7 @@ app.post('/api/chat', async (req, res) => {
 
     if (candidates.length === 0) {
       console.warn('[AI Diagnostic] /api/chat failed: no GEMINI_API_KEY configured in server environment or request.');
-      res.status(503).json({
+      res.status(401).json({
         error:
           'No Gemini API key is configured. Please set GEMINI_API_KEY in the server environment or enter your Gemini API key in Settings.',
         errorType: 'missing_key',
@@ -1226,7 +1240,7 @@ app.post('/api/chat', async (req, res) => {
       `[AI Diagnostic] /api/chat error response: type=${errInfo.errorType}, status=${errInfo.statusCode}, retryable=${errInfo.retryable}`,
     );
 
-    res.status(errInfo.statusCode || 502).json({
+    res.status(errInfo.statusCode || 500).json({
       error: errInfo.message,
       errorType: errInfo.errorType,
       isHighDemand: errInfo.isHighDemand,
@@ -1994,6 +2008,7 @@ app.post('/api/tts', async (req, res) => {
       const ttsModels = [
         { model: 'gemini-3.8-flash-lite-tts', timeoutMs: 6500 },
         { model: 'gemini-3.8-flash-tts', timeoutMs: 7000 },
+        { model: 'gemini-2.5-flash-preview-tts', timeoutMs: 7000 },
       ];
 
       let response: any = null;

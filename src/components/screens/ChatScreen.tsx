@@ -12,6 +12,7 @@ import {
   CheckCheck,
   LifeBuoy,
   CheckCircle2,
+  Settings,
 } from 'lucide-react';
 import { ChatMessage, ExpressionType, CompanionCharacter, RecognitionState } from '../../types';
 import { apiFetch } from '../../utils/apiConfig';
@@ -34,6 +35,7 @@ interface ChatScreenProps {
   micErrorMessage?: string | null;
   onClearMicError?: () => void;
   userName?: string;
+  onOpenSettings?: () => void;
 }
 
 export const ChatScreen: React.FC<ChatScreenProps> = ({
@@ -54,6 +56,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   micErrorMessage,
   onClearMicError,
   userName = 'Gamingfire',
+  onOpenSettings,
 }) => {
   const [inputText, setInputText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -363,7 +366,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               key={msg.id}
               className={`flex flex-col ${isCompanion ? 'items-start' : 'items-end'} animate-fadeIn`}
             >
-              <div className="flex items-end gap-2 max-w-[85%]">
+              <div className="flex items-end gap-2 max-w-[88%] sm:max-w-[85%] min-w-0">
                 {isCompanion && (
                   <div
                     className={`w-7 h-7 rounded-full p-[1px] flex-shrink-0 mb-1 ${
@@ -382,7 +385,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-4 py-3 shadow-md relative group ${
+                  className={`rounded-2xl px-3.5 py-2.5 sm:px-4 sm:py-3 shadow-md relative group min-w-0 break-words ${
                     msg.isError
                       ? 'bg-rose-950/60 border border-rose-500/40 text-rose-100 rounded-bl-sm'
                       : isCompanion
@@ -431,7 +434,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                     }`}
                   >
                     <span>{msg.timestamp}</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {msg.isError && onOpenSettings && (
+                        <button
+                          type="button"
+                          onClick={onOpenSettings}
+                          className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/25 text-slate-100 hover:text-white hover:bg-white/20 text-[11px] font-semibold transition-all active:scale-95"
+                          title="Open Settings to configure Gemini API key or Backend URL"
+                        >
+                          <Settings size={11} />
+                          <span>Settings</span>
+                        </button>
+                      )}
                       {msg.isError && (
                         <button
                           type="button"

@@ -35,6 +35,7 @@ import {
   getCustomApiBaseUrl,
   setCustomApiBaseUrl,
   isPackagedNativeOrigin,
+  testBackendServerConnection,
 } from '../../utils/apiConfig';
 
 interface SettingsScreenProps {
@@ -80,6 +81,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [backendUrlInput, setBackendUrlInput] = useState(() => getCustomApiBaseUrl());
   const [backendSaveStatus, setBackendSaveStatus] = useState<string>('');
+  const [isTestingBackend, setIsTestingBackend] = useState(false);
   const { isInstallable, isInstalled, isIOS, promptInstall } = usePWAInstall();
   const isNativeContainer = isPackagedNativeOrigin();
   const activeBackendOrigin = getApiBaseUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -674,16 +676,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               >
                 Save
               </button>
+              <button
+                type="button"
+                disabled={isTestingBackend}
+                onClick={async () => {
+                  setIsTestingBackend(true);
+                  setBackendSaveStatus('Testing server connection...');
+                  const res = await testBackendServerConnection(backendUrlInput.trim() || undefined);
+                  setIsTestingBackend(false);
+                  setBackendSaveStatus(res.diagnosticMessage);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-semibold border border-purple-500/30 transition-colors disabled:opacity-50"
+              >
+                {isTestingBackend ? 'Testing...' : 'Test'}
+              </button>
             </div>
             {backendSaveStatus && (
               <p
-                className={`text-[10px] ${
-                  backendSaveStatus.startsWith('Invalid') ? 'text-rose-400' : 'text-emerald-300'
+                className={`text-[10px] leading-snug ${
+                  backendSaveStatus.startsWith('Invalid') || backendSaveStatus.includes('Failed') || backendSaveStatus.includes('HTTP')
+                    ? 'text-rose-400'
+                    : 'text-emerald-300'
                 }`}
               >
                 {backendSaveStatus}
               </p>
             )}
+            <p className="text-[10px] text-slate-400 leading-normal pt-0.5">
+              On Android APK, adding your personal Gemini API key above enables direct on-device Gemini AI communication even when no remote backend server is reachable.
+            </p>
           </div>
         </div>
 
