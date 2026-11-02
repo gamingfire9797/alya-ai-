@@ -1,5 +1,6 @@
 import { getAccessToken } from './workspaceAuth';
 import { apiFetch } from './apiConfig';
+import { Storage } from './storage';
 
 export interface SlideContent {
   title: string;
@@ -22,15 +23,21 @@ export interface SavedPresentationMeta {
   url: string;
 }
 
-const SAVED_SLIDES_KEY = 'alya_google_slides_recent_v1';
+function getUserSlidesKey(explicitUserId?: string): string {
+  const uid = (explicitUserId || Storage.getActiveUserId() || '').trim();
+  if (!uid) return '';
+  return `alya_u4_${uid}_slides_recent_v1`;
+}
 
 export const SlidesService = {
   /**
-   * Get recently generated presentations list
+   * Get recently generated presentations list scoped to the active user
    */
-  getRecentPresentations(): SavedPresentationMeta[] {
+  getRecentPresentations(explicitUserId?: string): SavedPresentationMeta[] {
+    const key = getUserSlidesKey(explicitUserId);
+    if (!key) return [];
     try {
-      const data = localStorage.getItem(SAVED_SLIDES_KEY);
+      const data = localStorage.getItem(key);
       if (data) {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
@@ -40,23 +47,27 @@ export const SlidesService = {
   },
 
   /**
-   * Save a presentation metadata to recent list
+   * Save a presentation metadata to the active user's recent list
    */
-  saveRecentPresentation(meta: SavedPresentationMeta) {
+  saveRecentPresentation(meta: SavedPresentationMeta, explicitUserId?: string) {
+    const key = getUserSlidesKey(explicitUserId);
+    if (!key) return;
     try {
-      const current = this.getRecentPresentations().filter((p) => p.id !== meta.id);
+      const current = this.getRecentPresentations(explicitUserId).filter((p) => p.id !== meta.id);
       const updated = [meta, ...current].slice(0, 30);
-      localStorage.setItem(SAVED_SLIDES_KEY, JSON.stringify(updated));
+      localStorage.setItem(key, JSON.stringify(updated));
     } catch (_) {}
   },
 
   /**
-   * Remove a presentation from local recent list
+   * Remove a presentation from the active user's local recent list
    */
-  removeRecentPresentation(id: string) {
+  removeRecentPresentation(id: string, explicitUserId?: string) {
+    const key = getUserSlidesKey(explicitUserId);
+    if (!key) return;
     try {
-      const current = this.getRecentPresentations().filter((p) => p.id !== id);
-      localStorage.setItem(SAVED_SLIDES_KEY, JSON.stringify(current));
+      const current = this.getRecentPresentations(explicitUserId).filter((p) => p.id !== id);
+      localStorage.setItem(key, JSON.stringify(current));
     } catch (_) {}
   },
 

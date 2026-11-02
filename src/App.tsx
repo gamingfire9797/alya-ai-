@@ -12,6 +12,7 @@ import {
   RecognitionState,
   CoreCustomization,
   AutoFeaturesSettings,
+  OnboardingPreferences,
 } from './types';
 import { BACKGROUNDS, VOICE_STYLES, INITIAL_SETTINGS, DEFAULT_AUTO_FEATURES } from './data/initialData';
 import { Storage } from './utils/storage';
@@ -28,6 +29,10 @@ import {
 import { AndroidBridgeService, AndroidAppDefinition } from './utils/androidBridge';
 import { backgroundCompanionService } from './utils/backgroundService';
 import { apiFetch } from './utils/apiConfig';
+import {
+  signOutFirebaseIdentity,
+  deleteFirebaseCurrentUser,
+} from './utils/authService';
 
 // Components
 import { AnimatedCompanionBackground } from './components/character/AnimatedCompanionBackground';
@@ -59,10 +64,34 @@ import { SlidesScreen } from './components/screens/SlidesScreen';
 import { WorkScreen } from './components/screens/WorkScreen';
 
 export default function App() {
-  // State Initialization
-  const [settings, setSettings] = useState<AppSettings>(() => Storage.loadSettings());
-  const [character, setCharacter] = useState<CompanionCharacter>(() => settings.selectedCompanion || 'alya');
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('home');
+  // Ensure legacy un-namespaced Gamingfire profiles & shared keys are cleaned up once
+  const [initialSession] = useState(() => {
+    Storage.ensureCleanMultiUserState();
+    return Storage.loadAuthSession();
+  });
+
+  // User Profile & Sessions — null unless a valid authenticated or guest session token exists
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    if (initialSession?.user && initialSession.user.id && initialSession.token) {
+      return initialSession.user;
+    }
+    return null;
+  });
+
+  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+    return initialSession?.token || null;
+  });
+  const activeUserIdRef = useRef<string | null>(currentUser?.id || null);
+
+  // State Initialization scoped to the active user (if any)
+  const [settings, setSettings] = useState<AppSettings>(() => Storage.loadSettings(currentUser?.id));
+  const [character, setCharacter] = useState<CompanionCharacter>(
+    () => currentUser?.companionPreference || settings.selectedCompanion || 'alya'
+  );
+  // Fresh launch with no authenticated/guest session opens the Welcome/Onboarding screen
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(() =>
+    currentUser && currentUser.id ? 'home' : 'onboarding'
+  );
   const [isPhoneFrame, setIsPhoneFrame] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAutoFeaturesModal, setShowAutoFeaturesModal] = useState(false);
@@ -70,50 +99,16 @@ export default function App() {
   const [hasServerKey, setHasServerKey] = useState(true);
   const [userApiKey, setUserApiKey] = useState<string>(() => Storage.loadApiKey());
   const [showStudioModal, setShowStudioModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   // Auto Features State (Auto Mic, Auto Listen, Auto Reply, Auto TTS, Auto Retry, Smart Interruption, Conversation Continuation)
   const [autoFeatures, setAutoFeatures] = useState<AutoFeaturesSettings>(() => {
-    return settings.autoFeatures || Storage.loadAutoFeatures() || DEFAULT_AUTO_FEATURES;
+    return settings.autoFeatures || Storage.loadAutoFeatures(currentUser?.id) || DEFAULT_AUTO_FEATURES;
   });
 
   const [coreCustomization, setCoreCustomization] = useState<CoreCustomization>(() => {
     return settings.coreCustomization || INITIAL_SETTINGS.coreCustomization!;
   });
-
-  // User Profile & Sessions
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const saved = Storage.loadUserProfile();
-    if (saved) return saved;
-    const defaultProfile: UserProfile = {
-      id: 'usr_default_gamingfire',
-      displayName: settings.userName || 'Gamingfire',
-      username: 'gamingfire',
-      avatarUrl: 'alya_pink',
-      bannerUrl: 'cyber_neon',
-      companionPreference: character,
-      hasCompletedProfile: true,
-      hasCompletedOnboarding: true,
-      hasCompletedKeySetup: false,
-      createdAt: new Date().toISOString(),
-      communicationStyle: {
-        dominantLanguage: 'english',
-        hinglishAffinity: 0.4,
-        hindiAffinity: 0.1,
-        englishAffinity: 0.5,
-        formality: 'casual',
-        preferredPacing: 'natural',
-        lastUpdated: new Date().toISOString(),
-      },
-    };
-    Storage.saveUserProfile(defaultProfile);
-    return defaultProfile;
-  });
-
-  const [sessionToken, setSessionToken] = useState<string | null>(() => {
-    return Storage.loadAuthSession()?.token || null;
-  });
-
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   // Admin session
   const [adminToken, setAdminToken] = useState<string | null>(() => {
@@ -156,16 +151,22 @@ export default function App() {
     });
   }, []);
 
-  // Data
+  // Isolated Per-User Data
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    Storage.loadMessages(character, currentUser?.displayName || settings.userName || 'Gamingfire')
+    currentUser?.id
+      ? Storage.loadMessages(character, currentUser.displayName || settings.userName, currentUser.id)
+      : []
   );
-  const [memories, setMemories] = useState<MemoryItem[]>(() => Storage.loadMemories());
+  const [memories, setMemories] = useState<MemoryItem[]>(() =>
+    currentUser?.id ? Storage.loadMemories(currentUser.id) : []
+  );
   const [backgrounds, setBackgrounds] = useState<BackgroundItem[]>(() => {
-    const custom = Storage.loadCustomBackgrounds();
+    const custom = currentUser?.id ? Storage.loadCustomBackgrounds(currentUser.id) : [];
     return [...BACKGROUNDS, ...custom];
   });
-  const [activeBackground, setActiveBackground] = useState<BackgroundItem>(() => Storage.loadBackground());
+  const [activeBackground, setActiveBackground] = useState<BackgroundItem>(() =>
+    currentUser?.id ? Storage.loadBackground(currentUser.id) : BACKGROUNDS[0]
+  );
 
   // Speech Recognition & Control Refs
   const [isAutoVoiceActive, setIsAutoVoiceActive] = useState(false);
@@ -204,7 +205,7 @@ export default function App() {
     autoFeaturesRef.current = autoFeatures;
   }, [autoFeatures]);
 
-  // Calibrate time engine and check backend status on load
+  // Calibrate time engine, check backend status, and sync authenticated user data on load
   useEffect(() => {
     TimeEngine.calibrateWithServer();
 
@@ -217,6 +218,139 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
+
+  // Keep activeUserIdRef synchronized with currentUser
+  useEffect(() => {
+    activeUserIdRef.current = currentUser?.id || null;
+  }, [currentUser?.id]);
+
+  // Sync authenticated user profile, chats, memories, and preferences with backend when sessionToken changes
+  useEffect(() => {
+    if (!sessionToken || !currentUser?.id) return;
+    // Skip remote check for offline-only fallback tokens
+    if (sessionToken.startsWith('offline_tok_')) return;
+
+    const expectedUserId = currentUser.id;
+    let cancelled = false;
+    apiFetch('/api/user/data', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${sessionToken}` },
+    })
+      .then(async (res) => {
+        if (cancelled || activeUserIdRef.current !== expectedUserId) return;
+        if (res.status === 401) {
+          // If server session is invalid/expired and this is not a local guest session, force sign-in
+          if (currentUser.accountType !== 'guest') {
+            activeUserIdRef.current = null;
+            Storage.clearAuthSession();
+            setCurrentUser(null);
+            setSessionToken(null);
+            setMessages([]);
+            setMemories([]);
+            setCurrentScreen('onboarding');
+          }
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (
+          cancelled ||
+          activeUserIdRef.current !== expectedUserId ||
+          !data.success ||
+          !data.user ||
+          data.user.id !== expectedUserId
+        ) {
+          return;
+        }
+        const remoteUser: UserProfile = {
+          ...currentUser,
+          ...data.user,
+          hasCompletedProfile: true,
+          hasCompletedOnboarding: true,
+        };
+        setCurrentUser(remoteUser);
+        Storage.saveUserProfile(remoteUser);
+
+        if (data.data) {
+          const remoteAlya = Array.isArray(data.data.chats?.alya) ? data.data.chats.alya : [];
+          const remoteJarvis = Array.isArray(data.data.chats?.jarvis) ? data.data.chats.jarvis : [];
+          if (remoteAlya.length > 0) {
+            Storage.saveMessages('alya', remoteAlya, remoteUser.id);
+          }
+          if (remoteJarvis.length > 0) {
+            Storage.saveMessages('jarvis', remoteJarvis, remoteUser.id);
+          }
+          const activeComp = remoteUser.companionPreference || character;
+          const activeRemoteChats = activeComp === 'jarvis' ? remoteJarvis : remoteAlya;
+          if (activeRemoteChats.length > 0) {
+            setMessages(activeRemoteChats);
+          }
+
+          if (Array.isArray(data.data.memories) && data.data.memories.length > 0) {
+            Storage.saveMemories(data.data.memories, remoteUser.id);
+            setMemories(data.data.memories);
+          } else if (data.data.onboardingPreferences) {
+            const existing = Storage.loadMemories(remoteUser.id);
+            const syncedMemories = Storage.mergePreferencesIntoMemories(
+              data.data.onboardingPreferences,
+              existing
+            );
+            Storage.saveMemories(syncedMemories, remoteUser.id);
+            setMemories(syncedMemories);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken]);
+
+  // Helper to push chat updates for the current user to backend
+  const syncUserChatsToServer = useCallback(
+    (comp: CompanionCharacter, nextMessages: ChatMessage[], uid?: string) => {
+      const targetUid = uid || currentUser?.id;
+      if (!targetUid) return;
+      Storage.saveMessages(comp, nextMessages, targetUid);
+      const token = Storage.getSessionToken();
+      if (!token || token.startsWith('offline_tok_')) return;
+      apiFetch('/api/user/chats', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          companion: comp,
+          messages: nextMessages,
+        }),
+      }).catch(() => {});
+    },
+    [currentUser?.id]
+  );
+
+  // Helper to push memory updates for the current user to backend
+  const syncUserMemoriesToServer = useCallback(
+    (nextMemories: MemoryItem[], uid?: string) => {
+      const targetUid = uid || currentUser?.id;
+      if (!targetUid) return;
+      Storage.saveMemories(nextMemories, targetUid);
+      const token = Storage.getSessionToken();
+      if (!token || token.startsWith('offline_tok_')) return;
+      apiFetch('/api/user/memories', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          memories: nextMemories,
+        }),
+      }).catch(() => {});
+    },
+    [currentUser?.id]
+  );
 
   // Sync TTS speaking listener
   useEffect(() => {
@@ -312,11 +446,17 @@ export default function App() {
     setCharacter(newChar);
     setSettings((prev) => {
       const updated = { ...prev, selectedCompanion: newChar };
-      Storage.saveSettings(updated);
+      Storage.saveSettings(updated, currentUser?.id);
       return updated;
     });
-    const newMsgs = Storage.loadMessages(newChar, currentUser?.displayName || settings.userName);
-    setMessages(newMsgs);
+    if (currentUser?.id) {
+      const newMsgs = Storage.loadMessages(
+        newChar,
+        currentUser.displayName || settings.userName,
+        currentUser.id
+      );
+      setMessages(newMsgs);
+    }
     setExpression('normal');
   };
 
@@ -746,6 +886,7 @@ export default function App() {
     }
 
     const turnId = activeTurnIdRef.current;
+    const requestUserId = activeUserIdRef.current;
     const turnAbortController = new AbortController();
     chatAbortControllerRef.current = turnAbortController;
     isProcessingVoiceRef.current = true;
@@ -763,8 +904,8 @@ export default function App() {
     const detection = LanguageEngine.detectLanguage(cleanInput);
     if (retryCount === 0) {
       const updatedStyle = LanguageEngine.updateStyleProfile(currentUser?.communicationStyle, cleanInput);
-      Storage.saveCommunicationStyle(updatedStyle);
-      if (currentUser) {
+      Storage.saveCommunicationStyle(updatedStyle, requestUserId || undefined);
+      if (currentUser && activeUserIdRef.current === requestUserId) {
         const updatedUser = { ...currentUser, communicationStyle: updatedStyle };
         setCurrentUser(updatedUser);
         Storage.saveUserProfile(updatedUser);
@@ -780,8 +921,9 @@ export default function App() {
       };
 
       setMessages((prev) => {
+        if (activeUserIdRef.current !== requestUserId) return prev;
         const next = [...prev, userMsg];
-        Storage.saveMessages(character, next);
+        syncUserChatsToServer(character, next, requestUserId || undefined);
         return next;
       });
     }
@@ -795,7 +937,7 @@ export default function App() {
     VoiceLatencyTracker.record('aiRequestStart');
 
     try {
-      // 3. Lightweight relevant memory retrieval for low context overhead
+      // 3. Lightweight relevant memory retrieval for low context overhead (strictly from currentUser's isolated memories)
       const memoryTexts = Storage.getLightweightRelevantMemories(cleanInput, memories);
       const timeContext = TimeEngine.getFullContext();
 
@@ -813,6 +955,7 @@ export default function App() {
 
       // Helper to deliver a direct companion response and speak it with full lifecycle management
       const deliverCompanionReply = (replyText: string, replyEmotion: ExpressionType) => {
+        if (activeUserIdRef.current !== requestUserId) return;
         setIsThinking(false);
         setIsStreaming(false);
         setExpression(replyEmotion);
@@ -828,8 +971,9 @@ export default function App() {
         };
 
         setMessages((prev) => {
+          if (activeUserIdRef.current !== requestUserId) return prev;
           const next = [...prev, botMsg];
-          Storage.saveMessages(character, next);
+          syncUserChatsToServer(character, next, requestUserId || undefined);
           return next;
         });
 
@@ -1181,6 +1325,7 @@ export default function App() {
 
           const finalReply = botText.trim();
           setMessages((prev) => {
+            if (activeUserIdRef.current !== requestUserId) return prev;
             const next = prev.map((m) =>
               m.id === botMsgId
                 ? {
@@ -1192,7 +1337,7 @@ export default function App() {
                   }
                 : m
             );
-            Storage.saveMessages(character, next);
+            syncUserChatsToServer(character, next, requestUserId || undefined);
             return next;
           });
 
@@ -1249,7 +1394,7 @@ export default function App() {
         }),
       });
 
-      if (activeTurnIdRef.current !== turnId) return;
+      if (activeTurnIdRef.current !== turnId || activeUserIdRef.current !== requestUserId) return;
 
       const contentType = (res.headers.get('content-type') || '').toLowerCase();
       if (!contentType.includes('application/json')) {
@@ -1262,6 +1407,7 @@ export default function App() {
       }
 
       const data = await res.json();
+      if (activeTurnIdRef.current !== turnId || activeUserIdRef.current !== requestUserId) return;
       setIsThinking(false);
       VoiceLatencyTracker.record('aiResponseComplete');
 
@@ -1291,8 +1437,9 @@ export default function App() {
       };
 
       setMessages((prev) => {
+        if (activeUserIdRef.current !== requestUserId) return prev;
         const next = [...prev, botMsg];
-        Storage.saveMessages(character, next);
+        syncUserChatsToServer(character, next, requestUserId || undefined);
         return next;
       });
 
@@ -1381,8 +1528,9 @@ export default function App() {
       };
 
       setMessages((prev) => {
+        if (activeUserIdRef.current !== requestUserId) return prev;
         const next = [...prev, errorMsg];
-        Storage.saveMessages(character, next);
+        syncUserChatsToServer(character, next, requestUserId || undefined);
         return next;
       });
 
@@ -1444,7 +1592,7 @@ export default function App() {
     }
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
-      Storage.saveSettings(updated);
+      Storage.saveSettings(updated, currentUser?.id);
       return updated;
     });
   };
@@ -1454,7 +1602,7 @@ export default function App() {
     setAutoFeatures((prev) => {
       const merged = { ...prev, ...updated };
       autoFeaturesRef.current = merged;
-      Storage.saveAutoFeatures(merged);
+      Storage.saveAutoFeatures(merged, currentUser?.id);
       handleUpdateSettings({ autoFeatures: merged });
       return merged;
     });
@@ -1464,8 +1612,8 @@ export default function App() {
   const handleResetSettings = () => {
     setSettings(INITIAL_SETTINGS);
     setAutoFeatures(DEFAULT_AUTO_FEATURES);
-    Storage.saveSettings(INITIAL_SETTINGS);
-    Storage.saveAutoFeatures(DEFAULT_AUTO_FEATURES);
+    Storage.saveSettings(INITIAL_SETTINGS, currentUser?.id);
+    Storage.saveAutoFeatures(DEFAULT_AUTO_FEATURES, currentUser?.id);
   };
 
   // Memory Handlers
@@ -1482,7 +1630,7 @@ export default function App() {
     };
     const updated = [newMem, ...memories];
     setMemories(updated);
-    Storage.saveMemories(updated);
+    syncUserMemoriesToServer(updated);
   };
 
   const handleEditMemory = (id: string, text: string) => {
@@ -1491,34 +1639,34 @@ export default function App() {
 
     const updated = memories.map((m) => (m.id === id ? { ...m, text: clean } : m));
     setMemories(updated);
-    Storage.saveMemories(updated);
+    syncUserMemoriesToServer(updated);
   };
 
   const handleDeleteMemory = (id: string) => {
     const updated = memories.filter((m) => m.id !== id);
     setMemories(updated);
-    Storage.saveMemories(updated);
+    syncUserMemoriesToServer(updated);
   };
 
   const handleTogglePinMemory = (id: string) => {
     const updated = memories.map((m) => (m.id === id ? { ...m, pinned: !m.pinned } : m));
     setMemories(updated);
-    Storage.saveMemories(updated);
+    syncUserMemoriesToServer(updated);
   };
 
   // Background Handlers
   const handleApplyBackground = (bg: BackgroundItem) => {
     setActiveBackground(bg);
-    Storage.saveBackground(bg);
+    Storage.saveBackground(bg, currentUser?.id);
   };
 
   const handleAddCustomBackground = (bg: BackgroundItem) => {
-    const custom = Storage.loadCustomBackgrounds();
+    const custom = Storage.loadCustomBackgrounds(currentUser?.id);
     const updatedCustom = [bg, ...custom];
-    Storage.saveCustomBackgrounds(updatedCustom);
+    Storage.saveCustomBackgrounds(updatedCustom, currentUser?.id);
     setBackgrounds([...BACKGROUNDS, ...updatedCustom]);
     setActiveBackground(bg);
-    Storage.saveBackground(bg);
+    Storage.saveBackground(bg, currentUser?.id);
   };
 
   // Screen understanding analysis with Gemini Vision & Search Context
@@ -1568,19 +1716,290 @@ export default function App() {
     setShowEditProfileModal(false);
   };
 
+  // Save Onboarding / Personal Preferences and convert into user-isolated MemoryItems
+  const handleSaveOnboardingPreferences = async (prefs: OnboardingPreferences) => {
+    if (!currentUser?.id) return;
+    Storage.saveOnboardingPreferences(prefs, currentUser.id);
+    const mergedMemories = Storage.mergePreferencesIntoMemories(prefs, memories);
+    Storage.saveMemories(mergedMemories, currentUser.id);
+    setMemories(mergedMemories);
+
+    const updatedUser: UserProfile = {
+      ...currentUser,
+      displayName: prefs.callsign?.trim() || currentUser.displayName,
+      companionPreference: prefs.companionPreference || currentUser.companionPreference,
+      onboardingPreferences: prefs,
+    };
+    setCurrentUser(updatedUser);
+    Storage.saveUserProfile(updatedUser);
+
+    handleUpdateSettings({
+      userName: updatedUser.displayName,
+      preferredLanguage: prefs.preferredLanguage || settings.preferredLanguage,
+      selectedCompanion: prefs.companionPreference || character,
+    });
+
+    const token = Storage.getSessionToken();
+    if (token && !token.startsWith('offline_tok_')) {
+      try {
+        await apiFetch('/api/user/preferences', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            preferences: prefs,
+            memories: mergedMemories,
+          }),
+        });
+      } catch {
+        // Already saved in per-user local storage
+      }
+    }
+  };
+
+  // Clear all chats for the active user (local only by default; optional cloud delete)
+  const handleClearChatHistory = (alsoClearCloud = false) => {
+    if (!currentUser?.id) return;
+    const freshAlya = Storage.clearMessages('alya', currentUser.displayName, currentUser.id);
+    const freshJarvis = Storage.clearMessages('jarvis', currentUser.displayName, currentUser.id);
+    setMessages(character === 'jarvis' ? freshJarvis : freshAlya);
+    if (alsoClearCloud) {
+      const token = Storage.getSessionToken();
+      if (token && !token.startsWith('offline_tok_')) {
+        apiFetch('/api/user/chats', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        }).catch(() => {});
+      }
+    }
+  };
+
+  // Helper to reset all user-specific in-memory UI states on sign-out or account deletion
+  const clearInMemoryUserUiState = () => {
+    activeUserIdRef.current = null;
+    setCurrentUser(null);
+    setSessionToken(null);
+    setMessages([]);
+    setMemories([]);
+    setSettings(INITIAL_SETTINGS);
+    setAutoFeatures(DEFAULT_AUTO_FEATURES);
+    setCoreCustomization(INITIAL_SETTINGS.coreCustomization!);
+    setBackgrounds([...BACKGROUNDS]);
+    setActiveBackground(BACKGROUNDS[0]);
+    setLastVoiceTranscript('');
+    setAlyaVoiceReply('');
+    setLastSearchContext(null);
+    setActiveScreenCapture(null);
+    setPendingClarification(null);
+    setPendingConfirmation(null);
+    setIsMenuOpen(false);
+    setShowEditProfileModal(false);
+    setShowStudioModal(false);
+  };
+
+  // Sign out of current account session (preserves account data for next sign-in)
+  const handleLogoutUser = async () => {
+    cancelActiveGenerationAndSpeech();
+    stopListening();
+    const token = Storage.getSessionToken();
+    activeUserIdRef.current = null;
+    Storage.clearAuthSession();
+    clearInMemoryUserUiState();
+    setCurrentScreen('onboarding');
+    if (token && !token.startsWith('offline_tok_')) {
+      apiFetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    await signOutFirebaseIdentity();
+  };
+
+  // Reset all local app data on device
+  const handleResetLocalAppData = async () => {
+    cancelActiveGenerationAndSpeech();
+    stopListening();
+    activeUserIdRef.current = null;
+    Storage.resetAllLocalAppData();
+    clearInMemoryUserUiState();
+    setCurrentScreen('onboarding');
+    await signOutFirebaseIdentity();
+  };
+
+  // Permanently delete account & all personal data from server and local storage
+  const handleDeleteAccount = async () => {
+    cancelActiveGenerationAndSpeech();
+    stopListening();
+    const targetUserId = currentUser?.id;
+    const token = Storage.getSessionToken();
+    activeUserIdRef.current = null;
+    if (token && !token.startsWith('offline_tok_')) {
+      try {
+        await apiFetch('/api/auth/account', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ confirmDelete: 'DELETE' }),
+        });
+      } catch {
+        // Proceed with local account erasure even if offline
+      }
+    }
+    await deleteFirebaseCurrentUser();
+    await signOutFirebaseIdentity();
+    if (targetUserId) {
+      Storage.deleteUserAccountLocalData(targetUserId);
+    } else {
+      Storage.clearAuthSession();
+    }
+    clearInMemoryUserUiState();
+    setCurrentScreen('onboarding');
+  };
+
+  // Complete Onboarding / Login / Registration / Guest Launch
+  const handleFinishOnboarding = async (
+    profile: UserProfile,
+    token: string,
+    extra?: {
+      preferences?: OnboardingPreferences;
+      userData?: {
+        chats?: { alya?: ChatMessage[]; jarvis?: ChatMessage[] };
+        memories?: MemoryItem[];
+        onboardingPreferences?: OnboardingPreferences | null;
+      };
+      migratedFromGuestId?: string;
+    }
+  ) => {
+    // Cancel any previous user's in-flight generation or speech before switching account state
+    cancelActiveGenerationAndSpeech();
+    stopListening();
+
+    const resolvedPreferences =
+      extra?.preferences ||
+      extra?.userData?.onboardingPreferences ||
+      profile.onboardingPreferences;
+
+    const finalProfile: UserProfile = {
+      ...profile,
+      hasCompletedProfile: true,
+      hasCompletedOnboarding: true,
+      onboardingPreferences: resolvedPreferences,
+    };
+
+    activeUserIdRef.current = finalProfile.id;
+
+    // 1. If upgrading from a guest session with user confirmation, migrate local guest chats & memories
+    if (extra?.migratedFromGuestId && extra.migratedFromGuestId !== finalProfile.id) {
+      Storage.migrateGuestDataToAccount(extra.migratedFromGuestId, finalProfile);
+    }
+
+    // 2. Save active session & profile
+    Storage.saveAuthSession({ token, user: finalProfile });
+    Storage.saveUserProfile(finalProfile);
+    setCurrentUser(finalProfile);
+    setSessionToken(token);
+
+    // 3. Apply companion & language preferences into user-scoped settings
+    const nextComp =
+      resolvedPreferences?.companionPreference || finalProfile.companionPreference || character;
+    setCharacter(nextComp);
+
+    const userSettings = Storage.loadSettings(finalProfile.id);
+    const updatedSettings: AppSettings = {
+      ...userSettings,
+      userName: finalProfile.displayName,
+      selectedCompanion: nextComp,
+      preferredLanguage:
+        resolvedPreferences?.preferredLanguage || userSettings.preferredLanguage || 'auto',
+    };
+    setSettings(updatedSettings);
+    Storage.saveSettings(updatedSettings, finalProfile.id);
+
+    const userAutoFeatures =
+      updatedSettings.autoFeatures ||
+      Storage.loadAutoFeatures(finalProfile.id) ||
+      DEFAULT_AUTO_FEATURES;
+    setAutoFeatures(userAutoFeatures);
+    setCoreCustomization(updatedSettings.coreCustomization || INITIAL_SETTINGS.coreCustomization!);
+
+    // Load user-scoped backgrounds
+    const customBgs = Storage.loadCustomBackgrounds(finalProfile.id);
+    setBackgrounds([...BACKGROUNDS, ...customBgs]);
+    setActiveBackground(Storage.loadBackground(finalProfile.id));
+    setLastVoiceTranscript('');
+    setAlyaVoiceReply('');
+    setLastSearchContext(null);
+    setActiveScreenCapture(null);
+    setPendingClarification(null);
+    setPendingConfirmation(null);
+
+    // 4. Hydrate server userData if returned during login/migration
+    if (extra?.userData?.chats) {
+      if (Array.isArray(extra.userData.chats.alya) && extra.userData.chats.alya.length > 0) {
+        Storage.saveMessages('alya', extra.userData.chats.alya, finalProfile.id);
+      }
+      if (Array.isArray(extra.userData.chats.jarvis) && extra.userData.chats.jarvis.length > 0) {
+        Storage.saveMessages('jarvis', extra.userData.chats.jarvis, finalProfile.id);
+      }
+    }
+
+    // 5. Load or initialize user-scoped memories & merge onboarding preferences
+    let userMemories =
+      Array.isArray(extra?.userData?.memories) && extra.userData.memories.length > 0
+        ? extra.userData.memories
+        : Storage.loadMemories(finalProfile.id);
+
+    if (resolvedPreferences) {
+      Storage.saveOnboardingPreferences(resolvedPreferences, finalProfile.id);
+      userMemories = Storage.mergePreferencesIntoMemories(resolvedPreferences, userMemories);
+    }
+    Storage.saveMemories(userMemories, finalProfile.id);
+    setMemories(userMemories);
+
+    // 6. Load user-scoped chat messages for the selected companion
+    const userChats = Storage.loadMessages(nextComp, finalProfile.displayName, finalProfile.id);
+    setMessages(userChats);
+
+    // 7. Sync preferences & memories to backend if authenticated
+    if (resolvedPreferences && token && !token.startsWith('offline_tok_')) {
+      apiFetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          preferences: resolvedPreferences,
+          memories: userMemories,
+        }),
+      }).catch(() => {});
+    }
+
+    setCurrentScreen('home');
+  };
+
   const handleHeartTap = () => {
     if (settings.soundEffects) playChime('heart');
     setExpression('happy');
+    const callName = currentUser?.displayName || settings.userName || 'friend';
 
     const compliments =
       character === 'jarvis'
         ? [
-            `System optimal. Glad to assist, ${currentUser.displayName}.`,
+            `System optimal. Glad to assist, ${callName}.`,
             'Core processing running at peak efficiency.',
             'Always prepared. What is our next objective?',
           ]
         : [
-            `Yay! I love chatting with you, ${currentUser.displayName}! 💖`,
+            `Yay! I love chatting with you, ${callName}! 💖`,
             'Hehe, thank you for being wonderful! 🌸',
             'Always here for you! You make every day brighter! ✨',
           ];
@@ -1595,6 +2014,8 @@ export default function App() {
     });
   };
 
+  const activeDisplayName = currentUser?.displayName || settings.userName || 'Friend';
+
   const renderCurrentScreen = () => {
     switch (currentScreen) {
       case 'splash':
@@ -1602,7 +2023,7 @@ export default function App() {
           <SplashScreen
             currentCompanion={character}
             onSelectCompanion={handleSwitchCompanion}
-            onEnterApp={() => setCurrentScreen('home')}
+            onEnterApp={() => setCurrentScreen(currentUser?.id ? 'home' : 'onboarding')}
             hasGeminiKey={hasServerKey || !!userApiKey}
           />
         );
@@ -1612,13 +2033,9 @@ export default function App() {
           <NewOnboardingScreen
             initialCompanion={character}
             onSelectCompanion={handleSwitchCompanion}
-            onFinishOnboarding={(profile, token) => {
-              setCurrentUser(profile);
-              setSessionToken(token);
-              Storage.saveUserProfile(profile);
-              Storage.saveAuthSession({ token, user: profile });
-              setCurrentScreen('home');
-            }}
+            existingGuestUser={currentUser?.accountType === 'guest' ? currentUser : null}
+            existingGuestToken={currentUser?.accountType === 'guest' ? sessionToken : null}
+            onFinishOnboarding={handleFinishOnboarding}
           />
         );
 
@@ -1647,7 +2064,7 @@ export default function App() {
             isSpeaking={isSpeaking}
             isListening={isListening}
             isThinking={isThinking}
-            userName={currentUser?.displayName || settings.userName || 'Gamingfire'}
+            userName={activeDisplayName}
             messages={messages}
             avatarSize={settings.avatarSize}
             onChangeAvatarSize={(s) => handleUpdateSettings({ avatarSize: s })}
@@ -1715,9 +2132,9 @@ export default function App() {
             onToggleVoice={handleToggleVoice}
             onStartVoiceCall={() => setCurrentScreen('voice')}
             onClearChat={() => {
-              const fresh = Storage.clearMessages(character, currentUser?.displayName);
+              const fresh = Storage.clearMessages(character, currentUser?.displayName, currentUser?.id);
               setMessages(fresh);
-              Storage.saveMessages(character, fresh);
+              syncUserChatsToServer(character, fresh);
             }}
             onSpeakMessage={handleSpeakMessage}
             onRetryLastMessage={() => {
@@ -1728,7 +2145,7 @@ export default function App() {
             recognitionState={recognitionState}
             micErrorMessage={micErrorMessage}
             onClearMicError={() => setMicErrorMessage(null)}
-            userName={currentUser?.displayName || settings.userName}
+            userName={activeDisplayName}
             onOpenSettings={() => setCurrentScreen('settings')}
           />
         );
@@ -1790,7 +2207,7 @@ export default function App() {
             onOpenStudio={() => setShowStudioModal(true)}
             onOpenAutoFeatures={() => setShowAutoFeaturesModal(true)}
             autoFeatures={autoFeatures}
-            userName={currentUser?.displayName || settings.userName || 'Gamingfire'}
+            userName={activeDisplayName}
             coreCustomization={coreCustomization}
           />
         );
@@ -1821,7 +2238,7 @@ export default function App() {
           <PhoneControlScreen
             onOpenScreenTools={() => setCurrentScreen('screen_tools')}
             onSendAlyaMessage={(msg) => handleSendMessage(msg)}
-            userName={currentUser?.displayName || settings.userName}
+            userName={activeDisplayName}
             floatingMiniVisible={floatingMiniVisible}
             onToggleFloatingMini={(visible) => {
               setFloatingMiniVisible(visible);
@@ -1866,11 +2283,14 @@ export default function App() {
             }}
             currentUser={currentUser}
             sessionToken={sessionToken}
-            onUpdateProfile={(p) => setCurrentUser(p)}
-            onLogoutUser={() => {
-              Storage.clearAuthSession();
-              setSessionToken(null);
-            }}
+            onUpdateProfile={handleUpdateProfile}
+            onSaveOnboardingPreferences={handleSaveOnboardingPreferences}
+            onLogoutUser={handleLogoutUser}
+            onUpgradeGuestAccount={() => setCurrentScreen('onboarding')}
+            onClearChatHistory={handleClearChatHistory}
+            onResetLocalAppData={handleResetLocalAppData}
+            onDeleteAccount={handleDeleteAccount}
+            onOpenMemories={() => setCurrentScreen('memory')}
             onOpenGuide={() => setCurrentScreen('help')}
             onOpenAutoFeatures={() => setShowAutoFeaturesModal(true)}
             onRequestLocationPermission={() => setShowLocationModal(true)}
@@ -1881,7 +2301,7 @@ export default function App() {
         return (
           <OnboardingGuideScreen
             currentCompanion={character}
-            userName={currentUser?.displayName || settings.userName}
+            userName={activeDisplayName}
             onCompleteOnboarding={() => setCurrentScreen('home')}
             onBack={() => setCurrentScreen('home')}
             isStandalone={true}
@@ -1961,7 +2381,7 @@ export default function App() {
         return (
           <SlidesScreen
             character={character}
-            userName={currentUser?.displayName || settings.userName}
+            userName={activeDisplayName}
             userApiKey={userApiKey}
             onBackToHome={() => setCurrentScreen('home')}
           />
@@ -1976,7 +2396,7 @@ export default function App() {
             isSpeaking={isSpeaking}
             isListening={isListening}
             isThinking={isThinking}
-            userName={currentUser?.displayName || settings.userName || 'Gamingfire'}
+            userName={activeDisplayName}
             userApiKey={userApiKey}
             hasGeminiKey={hasServerKey || !!userApiKey}
             isAutoVoiceActive={isAutoVoiceActive}
@@ -2094,13 +2514,13 @@ export default function App() {
             setCurrentScreen(screen);
             setIsMenuOpen(false);
           }}
-          userName={currentUser?.displayName || settings.userName || 'Gamingfire'}
+          userName={activeDisplayName}
           character={character}
           currentUser={currentUser}
           onOpenAutoFeatures={() => setShowAutoFeaturesModal(true)}
         />
 
-        {showEditProfileModal && (
+        {showEditProfileModal && currentUser && (
           <EditProfileModal
             isOpen={showEditProfileModal}
             currentUser={currentUser}

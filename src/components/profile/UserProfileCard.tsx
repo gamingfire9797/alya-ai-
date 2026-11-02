@@ -113,18 +113,35 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({
               <h3 className="text-lg sm:text-xl font-bold font-comfortaa text-white truncate max-w-[240px]">
                 {nickname}
               </h3>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/10 text-slate-300 border border-white/10">
-                <ShieldCheck size={11} className="text-emerald-400" />
-                Verified
-              </span>
+              {profile?.accountType === 'guest' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  Guest • Local Only
+                </span>
+              ) : profile?.accountType === 'google' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  <ShieldCheck size={11} className="text-emerald-400" />
+                  Google Linked
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/10 text-slate-300 border border-white/10">
+                  <ShieldCheck size={11} className="text-emerald-400" />
+                  Registered Account
+                </span>
+              )}
             </div>
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-400 font-mono">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-400 font-mono">
               <span className={isJarvis ? 'text-amber-400/90' : 'text-pink-400/90'}>@</span>
               <span className="text-slate-300 font-semibold">{username}</span>
               <span className="text-slate-600">•</span>
               <span className="text-[11px] text-slate-400 capitalize">
                 {companion === 'jarvis' ? 'Jarvis Mode' : 'Alya Mode'}
               </span>
+              {profile?.email && (
+                <>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-[11px] text-slate-400 truncate max-w-[160px]">{profile.email}</span>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -265,9 +265,30 @@ export interface AdminSupportTicket {
   reviewedBy?: string;
 }
 
+export type AccountType = 'guest' | 'google' | 'registered';
+
+export type PreferredTone = 'friendly' | 'funny' | 'calm' | 'straightforward';
+
+export interface OnboardingPreferences {
+  callsign?: string;
+  favouriteColours?: string[];
+  favouriteFoods?: string[];
+  favouriteGames?: string[];
+  hobbies?: string[];
+  preferredLanguage?: 'auto' | 'hinglish' | 'english' | 'hindi';
+  workOrStudy?: string;
+  preferredTone?: PreferredTone;
+  companionPreference?: CompanionCharacter;
+  preferredVoiceId?: string;
+  customNotes?: string;
+  updatedAt?: string;
+}
+
 export interface UserProfile {
   id: string;
+  accountType?: AccountType;
   email?: string;
+  googleSub?: string;
   displayName: string;
   username: string;
   avatarUrl?: string;
@@ -278,6 +299,7 @@ export interface UserProfile {
   hasCompletedKeySetup: boolean;
   createdAt: string;
   communicationStyle?: CommunicationStyleProfile;
+  onboardingPreferences?: OnboardingPreferences;
 }
 
 export interface AuthSession {
@@ -285,3 +307,4 @@ export interface AuthSession {
   user: UserProfile;
   expiresAt?: number;
 }
+

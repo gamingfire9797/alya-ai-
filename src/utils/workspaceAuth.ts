@@ -1,17 +1,17 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
-  getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   onAuthStateChanged,
   User,
   signOut,
 } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+import {
+  firebaseAuth,
+  checkFirebaseDomainAuthorization,
+} from './authService';
 
-// Reuse existing Firebase App if already initialized
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const auth = getAuth(app);
+// Reuse shared Firebase Auth instance
+export const auth = firebaseAuth;
 
 // Google Workspace Presentation scope for Google Slides API
 export const PRESENTATIONS_SCOPE = 'https://www.googleapis.com/auth/presentations';
@@ -67,6 +67,15 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     return { user: result.user, accessToken: credential.accessToken };
   } catch (error: any) {
     console.error('Google Sign-In Error:', error);
+    if (String(error?.code || '') === 'auth/unauthorized-domain') {
+      const diag = await checkFirebaseDomainAuthorization();
+      const customErr: any = new Error(
+        `Domain "${diag.currentHostname}" is not yet authorized in Firebase Authentication (${diag.projectId}). Add "${diag.currentHostname}" in Firebase Console -> Authentication -> Settings -> Authorized domains.`,
+      );
+      customErr.code = 'auth/unauthorized-domain';
+      customErr.diagnostics = diag;
+      throw customErr;
+    }
     throw error;
   } finally {
     isSigningIn = false;

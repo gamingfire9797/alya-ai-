@@ -993,38 +993,117 @@ app.post('/api/support/submit-ticket', (req, res) => {
   res.json({ success: true, ticketId: ticket.id });
 });
 
-// Profile endpoints
+// =========================================================================
+// MULTI-USER AUTHENTICATION, GOOGLE OAUTH VERIFICATION & ISOLATED USER DATA
+// =========================================================================
 function getUserFromRequest(req: express.Request) {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : req.body?.token;
-  if (!token) return null;
-  const user = adminStore.verifyUserSession(token);
-  return user ? { user, token } : null;
+  const token =
+    authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]
+      : req.body?.token;
+  if (!token || typeof token !== 'string') return null;
+  const user = adminStore.verifyUserSession(token.trim());
+  return user ? { user, token: token.trim() } : null;
+}
+
+function verifyFirebaseOrGoogleJwt(idToken: string): {
+  valid: boolean;
+  sub?: string;
+  email?: string;
+  emailVerified?: boolean;
+  name?: string;
+  picture?: string;
+  error?: string;
+} {
+  try {
+    if (!idToken || typeof idToken !== 'string') {
+      return { valid: false, error: 'Missing Google ID token.' };
+    }
+    const parts = idToken.split('.');
+    if (parts.length !== 3) {
+      return { valid: false, error: 'Malformed Google ID token.' };
+    }
+    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf-8');
+    const payload = JSON.parse(payloadJson);
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (!payload.exp || payload.exp < nowSec - 60) {
+      return { valid: false, error: 'Google ID token has expired.' };
+    }
+    const allowedIssuers = [
+      'https://securetoken.google.com/gen-lang-client-0175071255',
+      'https://accounts.google.com',
+      'accounts.google.com',
+    ];
+    if (
+      !payload.iss ||
+      (!allowedIssuers.includes(payload.iss) &&
+        !String(payload.iss).startsWith('https://securetoken.google.com/'))
+    ) {
+      return { valid: false, error: 'Invalid token issuer.' };
+    }
+    const sub = String(payload.user_id || payload.sub || '').trim();
+    if (!sub) {
+      return { valid: false, error: 'Token missing subject identifier (sub).' };
+    }
+    return {
+      valid: true,
+      sub,
+      email: payload.email ? String(payload.email) : undefined,
+      emailVerified: Boolean(payload.email_verified),
+      name: payload.name ? String(payload.name) : undefined,
+      picture: payload.picture ? String(payload.picture) : undefined,
+    };
+  } catch {
+    return { valid: false, error: 'Failed to decode Google ID token.' };
+  }
 }
 
 app.post(['/api/profile/check-username', '/api/auth/check-username'], (req, res) => {
-  const { username = '', userId } = req.body || {};
+  const { username = '', excludeUserId } = req.body || {};
   const auth = getUserFromRequest(req);
-  const effectiveUserId = userId || (auth ? auth.user.id : undefined);
-  const availability = adminStore.isUsernameAvailable(String(username), effectiveUserId);
+  const effectiveExcludeId = auth ? auth.user.id : excludeUserId ? String(excludeUserId) : undefined;
+  const availability = adminStore.isUsernameAvailable(String(username), effectiveExcludeId);
   res.json({
     available: availability.available,
     error: availability.error,
   });
 });
 
-app.post(['/api/profile/create', '/api/auth/register-local'], (req, res) => {
-  const { username, displayName, avatarUrl, bannerUrl, companionPreference, existingUserId } = req.body || {};
+app.post(['/api/profile/create', '/api/auth/register-local', '/api/auth/register'], (req, res) => {
+  const {
+    username,
+    displayName,
+    email,
+    password,
+    firebaseUid,
+    accountType,
+    avatarUrl,
+    bannerUrl,
+    companionPreference,
+    onboardingPreferences,
+    initialMemories,
+    migrateFromGuestToken,
+    confirmMigrateGuest,
+  } = req.body || {};
   const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
   const userAgent = (req.headers['user-agent'] || '').slice(0, 150);
 
   const result = adminStore.createOrRegisterProfileUser({
     username: String(username || ''),
     displayName: String(displayName || 'Explorer'),
+    email: email ? String(email) : undefined,
+    password: password ? String(password) : undefined,
+    firebaseUid: firebaseUid ? String(firebaseUid) : undefined,
+    accountType: accountType === 'guest' ? 'guest' : 'registered',
     avatarUrl: avatarUrl ? String(avatarUrl) : undefined,
     bannerUrl: bannerUrl ? String(bannerUrl) : undefined,
     companionPreference: companionPreference === 'jarvis' ? 'jarvis' : 'alya',
-    existingUserId: existingUserId ? String(existingUserId) : undefined,
+    onboardingPreferences: onboardingPreferences || undefined,
+    initialMemories: Array.isArray(initialMemories) ? initialMemories : undefined,
+    migrateFromGuestToken: migrateFromGuestToken ? String(migrateFromGuestToken) : undefined,
+    confirmMigrateGuest: Boolean(confirmMigrateGuest),
     ip,
     userAgent,
   });
@@ -1036,23 +1115,269 @@ app.post(['/api/profile/create', '/api/auth/register-local'], (req, res) => {
   res.json({
     success: true,
     session: result.session,
+    sessionToken: result.session?.token,
     user: result.user,
+    userData: result.userData,
+    data: result.userData,
   });
 });
 
-app.post(['/api/profile/update', '/api/auth/update-profile'], (req, res) => {
+app.post('/api/auth/guest', (req, res) => {
+  const {
+    displayName,
+    companionPreference,
+    avatarUrl,
+    bannerUrl,
+    onboardingPreferences,
+    initialMemories,
+  } = req.body || {};
+  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const userAgent = (req.headers['user-agent'] || '').slice(0, 150);
+
+  const result = adminStore.createGuestUser({
+    displayName: displayName ? String(displayName) : 'Guest Explorer',
+    companionPreference: companionPreference === 'jarvis' ? 'jarvis' : 'alya',
+    avatarUrl: avatarUrl ? String(avatarUrl) : undefined,
+    bannerUrl: bannerUrl ? String(bannerUrl) : undefined,
+    onboardingPreferences: onboardingPreferences || undefined,
+    initialMemories: Array.isArray(initialMemories) ? initialMemories : undefined,
+    ip,
+    userAgent,
+  });
+
+  res.json({
+    success: true,
+    session: result.session,
+    sessionToken: result.session?.token,
+    user: result.user,
+    userData: result.userData,
+    data: result.userData,
+  });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { identifier, username, password, migrateFromGuestToken, confirmMigrateGuest } = req.body || {};
+  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const userAgent = (req.headers['user-agent'] || '').slice(0, 150);
+
+  const result = adminStore.loginUserAccount({
+    identifier: String(identifier || username || ''),
+    password: password ? String(password) : undefined,
+    migrateFromGuestToken: migrateFromGuestToken ? String(migrateFromGuestToken) : undefined,
+    confirmMigrateGuest: Boolean(confirmMigrateGuest),
+    ip,
+    userAgent,
+  });
+
+  if (!result.success) {
+    res.status(401).json({ error: result.error });
+    return;
+  }
+
+  res.json({
+    success: true,
+    session: result.session,
+    sessionToken: result.session?.token,
+    user: result.user,
+    userData: result.userData,
+    data: result.userData,
+  });
+});
+
+app.post('/api/auth/google', (req, res) => {
+  const {
+    idToken,
+    displayName,
+    preferredUsername,
+    companionPreference,
+    onboardingPreferences,
+    initialMemories,
+    migrateFromGuestToken,
+    confirmMigrateGuest,
+  } = req.body || {};
+
+  const verified = verifyFirebaseOrGoogleJwt(String(idToken || ''));
+  if (!verified.valid || !verified.sub) {
+    res.status(401).json({
+      error: verified.error || 'Google authentication token could not be verified.',
+    });
+    return;
+  }
+
+  const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const userAgent = (req.headers['user-agent'] || '').slice(0, 150);
+
+  const result = adminStore.authenticateGoogleUser({
+    googleSub: verified.sub,
+    email: verified.email || '',
+    displayName: String(displayName || verified.name || 'Explorer'),
+    photoURL: verified.picture,
+    preferredUsername: preferredUsername ? String(preferredUsername) : undefined,
+    companionPreference: companionPreference === 'jarvis' ? 'jarvis' : 'alya',
+    onboardingPreferences: onboardingPreferences || undefined,
+    initialMemories: Array.isArray(initialMemories) ? initialMemories : undefined,
+    migrateFromGuestToken: migrateFromGuestToken ? String(migrateFromGuestToken) : undefined,
+    confirmMigrateGuest: Boolean(confirmMigrateGuest),
+    ip,
+    userAgent,
+  });
+
+  res.json({
+    success: true,
+    isNewUser: result.isNewUser,
+    session: result.session,
+    sessionToken: result.session?.token,
+    user: result.user,
+    userData: result.userData,
+    data: result.userData,
+  });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (auth) {
+    adminStore.revokeUserSession(auth.token);
+  }
+  res.json({ success: true, message: 'Signed out and revoked session token.' });
+});
+
+app.post('/api/auth/migrate-guest', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Valid authenticated account session required.' });
+    return;
+  }
+  const { confirmMigrate, guestToken, guestSessionToken, guestUserId, chats, memories, onboardingPreferences } = req.body || {};
+  if (!confirmMigrate) {
+    res.status(400).json({ error: 'Explicit user confirmation is required to migrate guest data.' });
+    return;
+  }
+  adminStore.migrateGuestSessionToUser(String(guestToken || guestSessionToken || ''), auth.user.id, {
+    guestUserId: guestUserId ? String(guestUserId) : undefined,
+    chats,
+    memories,
+    onboardingPreferences,
+  });
+  const userData = adminStore.getUserData(auth.user.id);
+  res.json({
+    success: true,
+    user: adminStore.sanitizeUser(auth.user),
+    userData,
+    data: userData,
+  });
+});
+
+app.post('/api/auth/change-password', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Authentication required to change password.' });
+    return;
+  }
+  const { currentPassword, newPassword } = req.body || {};
+  const result = adminStore.changeUserPassword(
+    auth.user.id,
+    currentPassword ? String(currentPassword) : undefined,
+    String(newPassword || ''),
+  );
+  if (!result.success) {
+    res.status(400).json({ error: result.error || 'Failed to update password.' });
+    return;
+  }
+  res.json({
+    success: true,
+    message: 'Your account password has been updated.',
+  });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { username, identifier, email, newPassword } = req.body || {};
+  const result = adminStore.resetUserPassword({
+    username: String(username || identifier || ''),
+    email: email ? String(email) : undefined,
+    newPassword: String(newPassword || ''),
+  });
+  if (!result.success) {
+    res.status(400).json({ error: result.error || 'Password reset failed.' });
+    return;
+  }
+  res.json({
+    success: true,
+    message: 'Password reset completed. You can now sign in with your new password.',
+  });
+});
+
+app.get('/api/user/export', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const result = adminStore.exportOwnUserData(auth.user.id);
+  if (!result.success) {
+    res.status(404).json({ error: result.error || 'Failed to export user data.' });
+    return;
+  }
+  res.json({
+    success: true,
+    exportBundle: result.data,
+    exportPayload: result.data,
+  });
+});
+
+app.delete('/api/auth/account', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Authentication required to delete account.' });
+    return;
+  }
+  const confirmText = req.body?.confirmDelete || req.headers['x-confirm-delete'];
+  if (confirmText !== 'DELETE') {
+    res.status(400).json({ error: 'Please confirm account deletion by passing confirmDelete: "DELETE".' });
+    return;
+  }
+  const deletedUserId = auth.user.id;
+  adminStore.deleteOwnAccount(deletedUserId);
+  res.json({
+    success: true,
+    deletedUserId,
+    message: 'Your account and all associated server data have been permanently deleted.',
+  });
+});
+
+app.post('/api/auth/delete-account', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Authentication required to delete account.' });
+    return;
+  }
+  if (req.body?.confirmDelete !== 'DELETE') {
+    res.status(400).json({ error: 'Please confirm account deletion by passing confirmDelete: "DELETE".' });
+    return;
+  }
+  const deletedUserId = auth.user.id;
+  adminStore.deleteOwnAccount(deletedUserId);
+  res.json({
+    success: true,
+    deletedUserId,
+    message: 'Your account and all associated server data have been permanently deleted.',
+  });
+});
+
+const handleProfileUpdate = (req: express.Request, res: express.Response) => {
   const auth = getUserFromRequest(req);
   if (!auth) {
     res.status(401).json({ error: 'Valid user session required to update profile.' });
     return;
   }
-  const { displayName, username, avatarUrl, bannerUrl, companion } = req.body || {};
+  const { displayName, username, avatarUrl, bannerUrl, companion, companionPreference, onboardingPreferences } = req.body || {};
+  const nextComp = companion || companionPreference;
   const result = adminStore.updateUserProfile(auth.user.id, {
     displayName: displayName !== undefined ? String(displayName) : undefined,
     username: username !== undefined ? String(username) : undefined,
     avatarUrl: avatarUrl !== undefined ? String(avatarUrl) : undefined,
     bannerUrl: bannerUrl !== undefined ? String(bannerUrl) : undefined,
-    companion: companion === 'jarvis' ? 'jarvis' : companion === 'alya' ? 'alya' : undefined,
+    companion: nextComp === 'jarvis' ? 'jarvis' : nextComp === 'alya' ? 'alya' : undefined,
+    onboardingPreferences: onboardingPreferences !== undefined ? onboardingPreferences : undefined,
   });
   if (!result.success) {
     res.status(400).json({ error: result.error });
@@ -1062,7 +1387,10 @@ app.post(['/api/profile/update', '/api/auth/update-profile'], (req, res) => {
     success: true,
     user: result.user,
   });
-});
+};
+
+app.post(['/api/profile/update', '/api/auth/update-profile', '/api/user/profile'], handleProfileUpdate);
+app.put(['/api/profile/update', '/api/auth/update-profile', '/api/user/profile'], handleProfileUpdate);
 
 app.get(['/api/profile/me', '/api/auth/me'], (req, res) => {
   const auth = getUserFromRequest(req);
@@ -1070,9 +1398,91 @@ app.get(['/api/profile/me', '/api/auth/me'], (req, res) => {
     res.status(401).json({ authenticated: false, error: 'Session expired or not found.' });
     return;
   }
+  const userData = adminStore.getUserData(auth.user.id);
   res.json({
     authenticated: true,
     user: adminStore.sanitizeUser(auth.user),
+    userData,
+    data: userData,
+  });
+});
+
+// Strict Authorization-Enforced Per-User Data Endpoints
+app.get('/api/user/data', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const userData = adminStore.getUserData(auth.user.id);
+  res.json({
+    success: true,
+    user: adminStore.sanitizeUser(auth.user),
+    userData,
+    data: userData,
+  });
+});
+
+app.put('/api/user/chats', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const companion = req.body?.companion === 'jarvis' ? 'jarvis' : 'alya';
+  const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  const userData = adminStore.saveUserChats(auth.user.id, companion, messages);
+  res.json({
+    success: true,
+    chats: userData.chats,
+  });
+});
+
+app.delete('/api/user/chats', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const companion = req.body?.companion || req.query?.companion || 'all';
+  const userData = adminStore.clearUserChats(
+    auth.user.id,
+    companion === 'alya' || companion === 'jarvis' ? companion : 'all',
+  );
+  res.json({
+    success: true,
+    chats: userData.chats,
+  });
+});
+
+app.put('/api/user/memories', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const memories = Array.isArray(req.body?.memories) ? req.body.memories : [];
+  const userData = adminStore.saveUserMemories(auth.user.id, memories);
+  res.json({
+    success: true,
+    memories: userData.memories,
+  });
+});
+
+app.put('/api/user/preferences', (req, res) => {
+  const auth = getUserFromRequest(req);
+  if (!auth) {
+    res.status(401).json({ error: 'Unauthorized. Valid user session token required.' });
+    return;
+  }
+  const preferences = req.body?.preferences || {};
+  const memories = Array.isArray(req.body?.memories) ? req.body.memories : undefined;
+  const userData = adminStore.saveUserPreferences(auth.user.id, preferences, memories);
+  res.json({
+    success: true,
+    user: adminStore.sanitizeUser(auth.user),
+    onboardingPreferences: userData.onboardingPreferences,
+    memories: userData.memories,
   });
 });
 

@@ -22,13 +22,23 @@ import {
   BookOpen,
   Sliders,
   Cpu,
+  Brain,
+  Heart,
+  UserPlus,
+  RotateCcw,
+  AlertTriangle,
+  Lock,
+  Download,
 } from 'lucide-react';
-import { AppSettings, UserProfile } from '../../types';
+import { AppSettings, UserProfile, OnboardingPreferences } from '../../types';
 import { UserProfileCard } from '../profile/UserProfileCard';
 import { EditProfileModal } from '../profile/EditProfileModal';
+import { PersonalPreferencesModal } from '../profile/PersonalPreferencesModal';
 import { TimeEngine } from '../../utils/time';
 import { PermissionManager } from '../../utils/permissions';
 import { usePWAInstall } from '../../utils/usePWAInstall';
+import { Storage } from '../../utils/storage';
+import { tryFirebaseUpdatePassword } from '../../utils/authService';
 import {
   apiFetch,
   getApiBaseUrl,
@@ -49,7 +59,13 @@ interface SettingsScreenProps {
   currentUser?: UserProfile | null;
   sessionToken?: string | null;
   onUpdateProfile?: (updated: UserProfile) => void;
+  onSaveOnboardingPreferences?: (prefs: OnboardingPreferences) => Promise<void> | void;
   onLogoutUser?: () => void;
+  onUpgradeGuestAccount?: () => void;
+  onClearChatHistory?: (alsoClearCloud?: boolean) => void;
+  onResetLocalAppData?: () => void;
+  onDeleteAccount?: () => Promise<void> | void;
+  onOpenMemories?: () => void;
   onOpenGuide?: () => void;
   onOpenAutoFeatures?: () => void;
   onRequestLocationPermission?: () => void;
@@ -66,7 +82,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   currentUser,
   sessionToken,
   onUpdateProfile,
+  onSaveOnboardingPreferences,
   onLogoutUser,
+  onUpgradeGuestAccount,
+  onClearChatHistory,
+  onResetLocalAppData,
+  onDeleteAccount,
+  onOpenMemories,
   onOpenGuide,
   onOpenAutoFeatures,
   onRequestLocationPermission,
@@ -79,6 +101,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     message: '',
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    null | 'clear_chats' | 'reset_local' | 'delete_account' | 'change_password'
+  >(null);
+  const [alsoClearCloudChats, setAlsoClearCloudChats] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const [isExecutingAction, setIsExecutingAction] = useState(false);
+  const [accountFeedback, setAccountFeedback] = useState<string | null>(null);
   const [backendUrlInput, setBackendUrlInput] = useState(() => getCustomApiBaseUrl());
   const [backendSaveStatus, setBackendSaveStatus] = useState<string>('');
   const [isTestingBackend, setIsTestingBackend] = useState(false);
@@ -128,34 +162,123 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPasswordInput.trim().length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+    setIsExecutingAction(true);
+    setPasswordError(null);
+    setAccountFeedback(null);
+    try {
+      await tryFirebaseUpdatePassword(newPasswordInput.trim());
+      if (sessionToken && !sessionToken.startsWith('offline_tok_') && !sessionToken.startsWith('local_tok_')) {
+        const res = await apiFetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({
+            currentPassword: currentPasswordInput.trim() || undefined,
+            newPassword: newPasswordInput.trim(),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Could not update password.');
+        }
+      }
+      if (currentUser?.id) {
+        const offlineRes = await Storage.changeOfflinePassword(
+          currentUser.id,
+          currentPasswordInput.trim() || undefined,
+          newPasswordInput.trim(),
+        );
+        if (!offlineRes.success && (!sessionToken || sessionToken.startsWith('local_tok_'))) {
+          throw new Error(offlineRes.error || 'Could not update password.');
+        }
+      }
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmAction(null);
+      setAccountFeedback('Your account password has been updated.');
+    } catch (err: any) {
+      setPasswordError(err?.message || 'Failed to update password.');
+    } finally {
+      setIsExecutingAction(false);
+    }
+  };
+
+  const handleExportPersonalData = async () => {
+    setIsExportingData(true);
+    setAccountFeedback(null);
+    try {
+      let exportBundle: any = null;
+      if (sessionToken && !sessionToken.startsWith('offline_tok_') && !sessionToken.startsWith('local_tok_')) {
+        try {
+          const res = await apiFetch('/api/user/export', {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${sessionToken}` },
+          });
+          const data = await res.json();
+          if (res.ok && data.success && data.exportBundle) {
+            exportBundle = data.exportBundle;
+          }
+        } catch (_) {}
+      }
+      if (!exportBundle) {
+        exportBundle = Storage.exportLocalUserData(currentUser?.id);
+      }
+
+      const jsonStr = JSON.stringify(exportBundle, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = (currentUser?.username || 'user').replace(/[^a-z0-9_-]/gi, '_');
+      link.href = url;
+      link.download = `alya-personal-data-${safeName}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setAccountFeedback('Personal data exported as JSON!');
+    } catch {
+      setAccountFeedback('Could not export personal data.');
+    } finally {
+      setIsExportingData(false);
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col justify-between overflow-hidden bg-black/40 backdrop-blur-md p-4 space-y-3">
       <div>
         <h2 className="text-xl font-bold font-comfortaa text-white flex items-center gap-1.5">
-          Settings <span className="text-slate-400 text-xs">• Preferences & Time</span>
+          Settings <span className="text-slate-400 text-xs">• Account, Memory & Preferences</span>
         </h2>
         <p className="text-[11px] text-pink-300/80">
-          Personalize system time, language adaptation, voice delivery, and AI engine
+          Manage your personal account, isolated memory bank, language adaptation, voice delivery, and AI engine
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {/* User Account & Profile Section */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between text-xs font-bold text-slate-300 px-1">
             <div className="flex items-center gap-2">
               <User size={14} className={settings.selectedCompanion === 'jarvis' ? 'text-amber-400' : 'text-pink-400'} />
-              <span>User Profile & Identity</span>
+              <span>User Account & Personal Profile</span>
             </div>
             {onLogoutUser && (
               <button
                 type="button"
                 onClick={onLogoutUser}
-                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-400 transition-colors"
-                title="Reset or switch profile"
+                className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 text-slate-300 hover:text-rose-300 transition-colors"
+                title="Sign out of current session"
               >
                 <LogOut size={12} />
-                <span>Reset Profile</span>
+                <span>Sign Out</span>
               </button>
             )}
           </div>
@@ -172,6 +295,332 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             onEditProfile={() => setIsEditModalOpen(true)}
             showEditButton={true}
           />
+
+          {/* Account Status & Personal Memory Actions */}
+          <div className="glass-card rounded-2xl p-3 border border-pink-500/20 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">Account Status:</span>
+                {currentUser?.accountType === 'guest' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold text-[10px]">
+                    Guest Session (Local Only)
+                  </span>
+                ) : currentUser?.accountType === 'google' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold text-[10px]">
+                    Google Account Linked
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-200 font-bold text-[10px]">
+                    Registered Account
+                  </span>
+                )}
+              </div>
+              {currentUser?.id && (
+                <span className="text-[10px] font-mono text-slate-500 truncate max-w-[180px]" title={currentUser.id}>
+                  ID: {currentUser.id}
+                </span>
+              )}
+            </div>
+
+            {currentUser?.accountType === 'guest' && (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="text-[11px] text-amber-200/90 leading-snug">
+                  You are using <strong>Guest Mode</strong>. Guest chats & memories stay on this device only and may be lost if local storage is cleared.
+                </p>
+                {onUpgradeGuestAccount && (
+                  <button
+                    type="button"
+                    onClick={onUpgradeGuestAccount}
+                    className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <UserPlus size={12} />
+                    <span>Sign In / Link Account</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsPreferencesModalOpen(true)}
+                className="py-2 px-3 rounded-xl bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 text-pink-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Heart size={13} className="text-pink-400" />
+                <span>Personal Preferences & Questionnaire</span>
+              </button>
+              {onOpenMemories && (
+                <button
+                  type="button"
+                  onClick={onOpenMemories}
+                  className="py-2 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <Brain size={13} className="text-purple-400" />
+                  <span>Manage Personal Memory Bank</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1 border-t border-white/10">
+              {currentUser?.accountType !== 'guest' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPasswordInput('');
+                    setNewPasswordInput('');
+                    setPasswordError(null);
+                    setConfirmAction('change_password');
+                    setAccountFeedback(null);
+                  }}
+                  className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+                >
+                  <Lock size={11} className="text-pink-400" />
+                  <span>Password</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleExportPersonalData}
+                disabled={isExportingData}
+                className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+              >
+                <Download size={11} className="text-emerald-400" />
+                <span>{isExportingData ? 'Exporting...' : 'Export Data'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAlsoClearCloudChats(false);
+                  setConfirmAction('clear_chats');
+                  setAccountFeedback(null);
+                }}
+                className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+              >
+                <Trash2 size={11} className="text-amber-400" />
+                <span>Clear Chats</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmAction('reset_local');
+                  setAccountFeedback(null);
+                }}
+                className="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+              >
+                <RotateCcw size={11} className="text-cyan-400" />
+                <span>Reset Local</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmInput('');
+                  setConfirmAction('delete_account');
+                  setAccountFeedback(null);
+                }}
+                className="py-1.5 px-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors"
+              >
+                <AlertTriangle size={11} className="text-rose-400" />
+                <span>Delete Account</span>
+              </button>
+            </div>
+
+            {accountFeedback && (
+              <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="shrink-0" />
+                <span>{accountFeedback}</span>
+              </div>
+            )}
+
+            {/* Confirmation Dialogs for Password / Clear Chats / Reset Local / Delete Account */}
+            {confirmAction === 'change_password' && (
+              <form
+                onSubmit={handleChangePassword}
+                className="p-3 rounded-xl bg-pink-950/50 border border-pink-500/40 space-y-2.5 text-xs"
+              >
+                <div className="font-bold text-pink-200 flex items-center gap-1.5">
+                  <Lock size={14} className="text-pink-400" />
+                  <span>Change Account Password</span>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-300 font-semibold block">
+                    Current Password (leave blank if setting password on a Google-linked account)
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPasswordInput}
+                    onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                    placeholder="Current password"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-pink-400"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-300 font-semibold block">
+                    New Password (minimum 6 characters)
+                  </label>
+                  <input
+                    type="password"
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    placeholder="New password"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-pink-400"
+                  />
+                </div>
+                {passwordError && (
+                  <p className="text-[11px] text-rose-300">{passwordError}</p>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction(null)}
+                    className="px-3 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={newPasswordInput.trim().length < 6 || isExecutingAction}
+                    className="px-3 py-1 rounded-lg bg-pink-500 hover:bg-pink-400 disabled:opacity-40 text-white text-[11px] font-bold flex items-center gap-1"
+                  >
+                    {isExecutingAction && <Loader2 size={11} className="animate-spin" />}
+                    <span>Update Password</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {confirmAction === 'clear_chats' && (
+              <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 space-y-2 text-xs">
+                <div className="font-bold text-amber-200 flex items-center gap-1.5">
+                  <AlertCircle size={14} />
+                  <span>Clear conversation history for {currentUser?.displayName || 'your profile'}?</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  By default, this clears local chat messages on this device while keeping your cloud backup intact. Your profile and memories remain untouched.
+                </p>
+                {currentUser?.accountType !== 'guest' && (
+                  <label className="flex items-center gap-2 pt-0.5 cursor-pointer text-[11px] text-amber-200">
+                    <input
+                      type="checkbox"
+                      checked={alsoClearCloudChats}
+                      onChange={(e) => setAlsoClearCloudChats(e.target.checked)}
+                      className="accent-amber-500 w-3.5 h-3.5"
+                    />
+                    <span>Also delete my saved cloud/server chat history</span>
+                  </label>
+                )}
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction(null)}
+                    className="px-3 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onClearChatHistory) onClearChatHistory(alsoClearCloudChats);
+                      setConfirmAction(null);
+                      setAccountFeedback(
+                        alsoClearCloudChats
+                          ? 'Local and cloud chat history cleared.'
+                          : 'Local device chat history cleared (cloud history preserved).',
+                      );
+                    }}
+                    className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-bold"
+                  >
+                    {alsoClearCloudChats ? 'Clear Local & Cloud Chats' : 'Clear Local Chats Only'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {confirmAction === 'reset_local' && (
+              <div className="p-3 rounded-xl bg-cyan-950/60 border border-cyan-500/40 space-y-2 text-xs">
+                <div className="font-bold text-cyan-200 flex items-center gap-1.5">
+                  <RotateCcw size={14} />
+                  <span>Reset all local app data on this device?</span>
+                </div>
+                <p className="text-[11px] text-slate-300">
+                  This clears cached sessions, guest data, and local storage on this device and returns to the Welcome screen. Server-saved accounts are not deleted.
+                </p>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAction(null)}
+                    className="px-3 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmAction(null);
+                      if (onResetLocalAppData) onResetLocalAppData();
+                    }}
+                    className="px-3 py-1 rounded-lg bg-cyan-500 text-slate-950 text-[11px] font-bold"
+                  >
+                    Reset Device Storage
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {confirmAction === 'delete_account' && (
+              <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-500/50 space-y-2.5 text-xs">
+                <div className="font-bold text-rose-200 flex items-center gap-1.5">
+                  <AlertTriangle size={14} className="text-rose-400" />
+                  <span>Permanently Delete Account & Personal Data</span>
+                </div>
+                <p className="text-[11px] text-rose-100/90 leading-snug">
+                  This will permanently delete your account (<strong>@{currentUser?.username || 'user'}</strong>), saved memories, onboarding answers, and chat history from both the server and this device. This cannot be undone.
+                </p>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-rose-200 font-semibold block">
+                    Type <span className="font-mono font-bold text-white">DELETE</span> below to confirm:
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmInput}
+                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                    placeholder="Type DELETE"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-rose-500/40 text-xs text-white font-mono focus:outline-none focus:border-rose-400"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmAction(null);
+                      setDeleteConfirmInput('');
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 text-slate-200 text-[11px] font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteConfirmInput.trim() !== 'DELETE' || isExecutingAction}
+                    onClick={async () => {
+                      if (!onDeleteAccount) return;
+                      setIsExecutingAction(true);
+                      try {
+                        await onDeleteAccount();
+                      } finally {
+                        setIsExecutingAction(false);
+                        setConfirmAction(null);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-[11px] font-bold flex items-center gap-1"
+                  >
+                    {isExecutingAction && <Loader2 size={11} className="animate-spin" />}
+                    <span>Permanently Delete Account</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {isEditModalOpen && (
             <EditProfileModal
               isOpen={isEditModalOpen}
@@ -195,6 +644,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               onProfileUpdated={(updated) => {
                 if (onUpdateProfile) onUpdateProfile(updated);
                 onUpdateSettings({ userName: updated.displayName });
+              }}
+            />
+          )}
+
+          {isPreferencesModalOpen && (
+            <PersonalPreferencesModal
+              isOpen={isPreferencesModalOpen}
+              onClose={() => setIsPreferencesModalOpen(false)}
+              initialPreferences={currentUser?.onboardingPreferences}
+              defaultCallsign={currentUser?.displayName || settings.userName || ''}
+              companion={settings.selectedCompanion}
+              onSavePreferences={async (prefs: OnboardingPreferences) => {
+                if (onSaveOnboardingPreferences) {
+                  await onSaveOnboardingPreferences(prefs);
+                  setAccountFeedback('Personal preferences saved and synced to your Memory Bank!');
+                }
               }}
             />
           )}

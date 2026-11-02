@@ -1,35 +1,6 @@
 import { BackgroundItem, VoiceStyle, MemoryItem, AppSettings, AutoFeaturesSettings } from '../types';
 
-export const INITIAL_MEMORIES: MemoryItem[] = [
-  {
-    id: 'mem-1',
-    category: 'Preferences',
-    text: 'Prefers concise, intelligent answers and friendly evening conversations.',
-    dateAdded: '2 days ago',
-    pinned: true,
-  },
-  {
-    id: 'mem-2',
-    category: 'Preferences',
-    text: 'Favorite aesthetic: Dark futuristic interface with glowing holographic telemetry.',
-    dateAdded: '3 days ago',
-    pinned: true,
-  },
-  {
-    id: 'mem-3',
-    category: 'Notes',
-    text: 'Companion callsign: Gamingfire',
-    dateAdded: '4 days ago',
-    pinned: true,
-  },
-  {
-    id: 'mem-4',
-    category: 'Chats',
-    text: 'Values natural voice pacing, clear English/Hinglish pronunciation, and calm guidance.',
-    dateAdded: '5 days ago',
-    pinned: false,
-  },
-];
+export const INITIAL_MEMORIES: MemoryItem[] = [];
 
 export const BACKGROUNDS: BackgroundItem[] = [
   {
@@ -188,7 +159,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   backgroundServiceMode: false,
   wakeWordEnabled: false,
   wakeWord: 'Alya, wake up',
-  userName: 'Gamingfire',
+  userName: '',
   hasCompletedOnboarding: false,
   autoFeatures: DEFAULT_AUTO_FEATURES,
   coreCustomization: {

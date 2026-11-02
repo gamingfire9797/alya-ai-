@@ -325,7 +325,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 value={displayName}
                 maxLength={40}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. Gamingfire"
+                placeholder="e.g. Alex"
                 className="w-full px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500/50"
               />
               <span className="text-[10px] text-slate-400">Shown in conversation and profile</span>

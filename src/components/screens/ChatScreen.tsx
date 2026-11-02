@@ -55,7 +55,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   recognitionState = 'idle',
   micErrorMessage,
   onClearMicError,
-  userName = 'Gamingfire',
+  userName = 'Friend',
   onOpenSettings,
 }) => {
   const [inputText, setInputText] = useState('');

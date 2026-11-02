@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Isolated user account profile scoped to Firebase UID",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID matching Firebase UID",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "description": "Unique username handle",
+          "minLength": 2,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-.]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Preferred display name",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "companionPreference": {
+          "type": "string",
+          "enum": ["alya", "jarvis"],
+          "description": "Selected AI companion persona"
+        },
+        "accountType": {
+          "type": "string",
+          "enum": ["guest", "registered", "google"],
+          "description": "Authentication provider type"
+        }
+      },
+      "required": ["id", "username", "displayName"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "User-scoped conversation message with Alya or Jarvis",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "alya", "jarvis"]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "role", "text"]
+    },
+    "MemoryItem": {
+      "title": "MemoryItem",
+      "description": "User-scoped personal memory and preference item",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "required": ["id", "category", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Root user document isolated to request.auth.uid == userId"
+    },
+    "/users/{userId}/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Per-user isolated chat history"
+    },
+    "/users/{userId}/memories/{memoryId}": {
+      "schema": { "$ref": "#/entities/MemoryItem" },
+      "description": "Per-user isolated memories and preferences"
+    }
+  }
+}

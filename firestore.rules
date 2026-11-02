@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened primitive helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['id', 'username', 'displayName'])
+        && data.id is string && data.id == userId
+        && data.username is string && data.username.size() >= 2 && data.username.size() <= 40
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60;
+    }
+
+    function isValidChatDoc(data) {
+      return data.keys().hasAll(['id', 'role', 'text'])
+        && data.id is string && data.id.size() <= 128
+        && data.role is string && data.role in ['user', 'alya', 'jarvis']
+        && data.text is string && data.text.size() <= 8000;
+    }
+
+    function isValidMemoryDoc(data) {
+      return data.keys().hasAll(['id', 'category', 'text'])
+        && data.id is string && data.id.size() <= 128
+        && data.category is string && data.category.size() <= 40
+        && data.text is string && data.text.size() <= 1000;
+    }
+
+    // 3. Strict per-user isolation: Users can ONLY read/write their own /users/{userId} tree
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId) && resource.data.id == request.auth.uid;
+      allow create: if isOwner(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId)
+        && isValidUserProfile(incoming(), userId)
+        && incoming().id == existing().id;
+      allow delete: if isOwner(userId);
+
+      // User's isolated chats (Alya & Jarvis)
+      match /chats/{chatId} {
+        allow get: if isOwner(userId) && isValidId(chatId);
+        allow list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(chatId) && isValidChatDoc(incoming());
+        allow delete: if isOwner(userId) && isValidId(chatId);
+      }
+
+      // User's isolated personal memories
+      match /memories/{memoryId} {
+        allow get: if isOwner(userId) && isValidId(memoryId);
+        allow list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(memoryId) && isValidMemoryDoc(incoming());
+        allow delete: if isOwner(userId) && isValidId(memoryId);
+      }
+
+      // User's isolated onboarding preferences & settings
+      match /preferences/{prefId} {
+        allow get, create, update, delete: if isOwner(userId) && isValidId(prefId);
+        allow list: if isOwner(userId);
+      }
+
+      match /settings/{settingId} {
+        allow get, create, update, delete: if isOwner(userId) && isValidId(settingId);
+        allow list: if isOwner(userId);
+      }
+    }
+  }
+}

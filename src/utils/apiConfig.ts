@@ -5,6 +5,7 @@ import {
   executeDirectValidateKey,
   hasUsableClientGeminiKey,
 } from './clientGeminiEngine';
+import { Storage } from './storage';
 
 /**
  * Cross-Platform API Configuration & Native Fetch Router
@@ -370,7 +371,10 @@ function parseJsonBodySafely(init?: RequestInit): any {
  * Provides clean local fallback responses on packaged Android APK for non-AI utility routes
  * when no remote Express backend server is reachable.
  */
-function createStandaloneAndroidUtilityResponse(apiPath: string, init?: RequestInit): Response | null {
+async function createStandaloneAndroidUtilityResponse(
+  apiPath: string,
+  init?: RequestInit,
+): Promise<Response | null> {
   const cleanPath = apiPath.split('?')[0];
 
   if (cleanPath === '/api/time') {
@@ -422,60 +426,198 @@ function createStandaloneAndroidUtilityResponse(apiPath: string, init?: RequestI
   }
 
   if (cleanPath === '/api/profile/check-username' || cleanPath === '/api/auth/check-username') {
-    return new Response(JSON.stringify({ available: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const body = parseJsonBodySafely(init);
+    const available = Storage.isOfflineUsernameAvailable(
+      String(body.username || ''),
+      body.excludeUserId ? String(body.excludeUserId) : undefined,
+    );
+    return new Response(
+      JSON.stringify({
+        available,
+        error: available ? undefined : 'Username is already taken on this device.',
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   }
 
-  if (cleanPath === '/api/profile/create' || cleanPath === '/api/auth/register-local') {
+  if (cleanPath === '/api/auth/guest') {
     const body = parseJsonBodySafely(init);
     const nowIso = new Date().toISOString();
-    const userId = body.existingUserId || `usr_${Date.now().toString(36)}`;
+    const rand = Math.random().toString(36).slice(2, 8);
+    const userId = `usr_guest_${Date.now().toString(36)}_${rand}`;
+    const user = {
+      id: userId,
+      accountType: 'guest' as const,
+      username: `guest_${rand}`,
+      displayName: String(body.displayName || 'Guest Explorer'),
+      avatarUrl: body.avatarUrl || 'alya_pink',
+      bannerUrl: body.bannerUrl || 'cyber_neon',
+      companionPreference: (body.companionPreference === 'jarvis' ? 'jarvis' : 'alya') as 'alya' | 'jarvis',
+      hasCompletedProfile: true,
+      hasCompletedOnboarding: true,
+      hasCompletedKeySetup: hasUsableClientGeminiKey(),
+      createdAt: nowIso,
+      onboardingPreferences: body.onboardingPreferences || undefined,
+    };
     return new Response(
       JSON.stringify({
         success: true,
         session: {
-          token: `local_tok_${Date.now().toString(36)}`,
+          token: `local_guest_tok_${Date.now().toString(36)}_${rand}`,
           userId,
           expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
         },
-        user: {
-          id: userId,
-          username: String(body.username || 'explorer')
-            .toLowerCase()
-            .replace(/[^a-z0-9_]/g, ''),
-          displayName: String(body.displayName || 'Explorer'),
-          avatarUrl: body.avatarUrl || 'alya_pink',
-          bannerUrl: body.bannerUrl || 'cyber_neon',
-          companionPreference: body.companionPreference === 'jarvis' ? 'jarvis' : 'alya',
-          hasCompletedProfile: true,
-          hasCompletedOnboarding: true,
-          hasCompletedKeySetup: hasUsableClientGeminiKey(),
-          createdAt: nowIso,
+        user,
+        userData: {
+          userId,
+          chats: { alya: [], jarvis: [] },
+          memories: Array.isArray(body.initialMemories) ? body.initialMemories : [],
+          onboardingPreferences: body.onboardingPreferences || null,
         },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
-  if (cleanPath === '/api/profile/update' || cleanPath === '/api/auth/update-profile') {
+  if (
+    cleanPath === '/api/profile/create' ||
+    cleanPath === '/api/auth/register-local' ||
+    cleanPath === '/api/auth/register'
+  ) {
     const body = parseJsonBodySafely(init);
+    const nowIso = new Date().toISOString();
+    const rand = Math.random().toString(36).slice(2, 8);
+    const userId = `usr_${Date.now().toString(36)}_${rand}`;
+    const cleanUsername = String(body.username || `user_${rand}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '');
+
+    if (!Storage.isOfflineUsernameAvailable(cleanUsername)) {
+      return new Response(
+        JSON.stringify({ error: 'This username is already taken. Please choose another.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const user = {
+      id: userId,
+      accountType: (body.accountType === 'guest' ? 'guest' : 'registered') as 'guest' | 'registered',
+      email: body.email ? String(body.email) : undefined,
+      username: cleanUsername,
+      displayName: String(body.displayName || cleanUsername || 'Explorer'),
+      avatarUrl: body.avatarUrl || 'alya_pink',
+      bannerUrl: body.bannerUrl || 'cyber_neon',
+      companionPreference: (body.companionPreference === 'jarvis' ? 'jarvis' : 'alya') as 'alya' | 'jarvis',
+      hasCompletedProfile: true,
+      hasCompletedOnboarding: true,
+      hasCompletedKeySetup: hasUsableClientGeminiKey(),
+      createdAt: nowIso,
+      onboardingPreferences: body.onboardingPreferences || undefined,
+    };
+
+    await Storage.registerOfflineAccount({
+      user,
+      password: body.password ? String(body.password) : undefined,
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
-        user: {
-          id: 'usr_local',
-          username: body.username || 'explorer',
-          displayName: body.displayName || 'Explorer',
-          avatarUrl: body.avatarUrl || 'alya_pink',
-          bannerUrl: body.bannerUrl || 'cyber_neon',
-          companionPreference: body.companion || 'alya',
-          hasCompletedProfile: true,
-          hasCompletedOnboarding: true,
-          hasCompletedKeySetup: hasUsableClientGeminiKey(),
-          createdAt: new Date().toISOString(),
+        session: {
+          token: `local_tok_${Date.now().toString(36)}_${rand}`,
+          userId,
+          expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
         },
+        user,
+        userData: {
+          userId,
+          chats: { alya: [], jarvis: [] },
+          memories: Array.isArray(body.initialMemories) ? body.initialMemories : [],
+          onboardingPreferences: body.onboardingPreferences || null,
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  if (cleanPath === '/api/auth/login') {
+    const body = parseJsonBodySafely(init);
+    const authRes = await Storage.authenticateOfflineAccount(
+      String(body.identifier || body.username || ''),
+      body.password ? String(body.password) : undefined,
+    );
+    if (!authRes.success || !authRes.user) {
+      return new Response(
+        JSON.stringify({ error: authRes.error || 'Invalid credentials.' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    const u = authRes.user;
+    return new Response(
+      JSON.stringify({
+        success: true,
+        session: {
+          token: `local_tok_${Date.now().toString(36)}`,
+          userId: u.id,
+          expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
+        },
+        user: u,
+        userData: {
+          userId: u.id,
+          chats: {
+            alya: Storage.loadMessages('alya', u.displayName, u.id),
+            jarvis: Storage.loadMessages('jarvis', u.displayName, u.id),
+          },
+          memories: Storage.loadMemories(u.id),
+          onboardingPreferences: Storage.loadOnboardingPreferences(u.id),
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  if (
+    cleanPath === '/api/auth/logout' ||
+    cleanPath === '/api/auth/account' ||
+    cleanPath === '/api/auth/delete-account' ||
+    cleanPath === '/api/auth/migrate-guest' ||
+    cleanPath === '/api/user/chats' ||
+    cleanPath === '/api/user/memories' ||
+    cleanPath === '/api/user/preferences' ||
+    cleanPath === '/api/user/data'
+  ) {
+    return new Response(JSON.stringify({ success: true, standalone: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (cleanPath === '/api/profile/update' || cleanPath === '/api/auth/update-profile') {
+    const body = parseJsonBodySafely(init);
+    const activeProfile = Storage.loadUserProfile();
+    const updatedUser = {
+      ...(activeProfile || {
+        id: Storage.getActiveUserId() || `usr_${Date.now().toString(36)}`,
+        accountType: 'registered' as const,
+        hasCompletedProfile: true,
+        hasCompletedOnboarding: true,
+        hasCompletedKeySetup: hasUsableClientGeminiKey(),
+        createdAt: new Date().toISOString(),
+      }),
+      username: body.username || activeProfile?.username || 'explorer',
+      displayName: body.displayName || activeProfile?.displayName || 'Explorer',
+      avatarUrl: body.avatarUrl || activeProfile?.avatarUrl || 'alya_pink',
+      bannerUrl: body.bannerUrl || activeProfile?.bannerUrl || 'cyber_neon',
+      companionPreference: (body.companion || activeProfile?.companionPreference || 'alya') as 'alya' | 'jarvis',
+      onboardingPreferences: body.onboardingPreferences || activeProfile?.onboardingPreferences,
+    };
+    return new Response(
+      JSON.stringify({
+        success: true,
+        user: updatedUser,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } },
     );
@@ -693,8 +835,16 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     const { signal, didTimeout, cleanup } = createTimedRequestSignal(init?.signal, DEFAULT_API_TIMEOUT_MS);
 
     try {
+      const mergedHeaders = new Headers(init?.headers || {});
+      if (!mergedHeaders.has('Authorization')) {
+        const activeToken = Storage.getSessionToken();
+        if (activeToken) {
+          mergedHeaders.set('Authorization', `Bearer ${activeToken}`);
+        }
+      }
       const res = await originalFetch(targetUrl, {
         ...init,
+        headers: mergedHeaders,
         signal,
       });
       cleanup();
@@ -824,7 +974,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
 
   // 2. Check if this is a non-AI utility endpoint on standalone Android APK
   if (nativeOrigin) {
-    const utilityFallback = createStandaloneAndroidUtilityResponse(apiPath, init);
+    const utilityFallback = await createStandaloneAndroidUtilityResponse(apiPath, init);
     if (utilityFallback) {
       return utilityFallback;
     }

@@ -16,6 +16,8 @@ import {
   Sliders,
   Shield,
   X,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { CompanionCharacter } from '../../types';
 import {
@@ -24,6 +26,7 @@ import {
   logout,
   getAccessToken,
 } from '../../utils/workspaceAuth';
+import { FirebaseDomainDiagnostics } from '../../utils/authService';
 import {
   SlidesService,
   SavedPresentationMeta,
@@ -73,6 +76,8 @@ export const SlidesScreen: React.FC<SlidesScreenProps> = ({
   const [hasAuthToken, setHasAuthToken] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [domainDiag, setDomainDiag] = useState<FirebaseDomainDiagnostics | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
 
   // Slides State
   const [presentations, setPresentations] = useState<SavedPresentationMeta[]>(() =>
@@ -123,10 +128,14 @@ export const SlidesScreen: React.FC<SlidesScreenProps> = ({
       if (res) {
         setCurrentUser(res.user);
         setHasAuthToken(true);
+        setDomainDiag(null);
         playChime('receive');
       }
     } catch (err: any) {
       console.error('Sign in failed:', err);
+      if (err?.diagnostics) {
+        setDomainDiag(err.diagnostics);
+      }
       setAuthError(err?.message || 'Google sign-in was cancelled or encountered an error.');
     } finally {
       setIsSigningIn(false);
@@ -257,9 +266,49 @@ export const SlidesScreen: React.FC<SlidesScreenProps> = ({
                   Sign in with your Google account to grant permission for {isJarvis ? 'Jarvis' : 'Alya'} to create, format, and organize slide decks directly inside your Google Slides account.
                 </p>
                 {authError && (
-                  <p className="text-xs text-rose-400 mt-2 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2">
-                    {authError}
-                  </p>
+                  <div className="text-xs text-rose-400 mt-2 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 space-y-2">
+                    <p>{authError}</p>
+                    {domainDiag && (
+                      <div className="pt-1.5 border-t border-rose-500/20 space-y-1.5 text-slate-200">
+                        <p className="text-[11px] text-amber-300 font-semibold">
+                          Add in Firebase Console ({domainDiag.projectId}) → Authentication → Settings → Authorized domains:
+                        </p>
+                        {domainDiag.requiredDomains.map((item) => (
+                          <div
+                            key={item.domain}
+                            className="flex items-center justify-between gap-2 px-2 py-1 rounded bg-black/40 border border-white/10"
+                          >
+                            <span className="font-mono text-[11px] text-white truncate">
+                              {item.domain}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(item.domain);
+                                  setCopiedDomain(item.domain);
+                                  setTimeout(() => setCopiedDomain(null), 2000);
+                                } catch (_) {}
+                              }}
+                              className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-white flex items-center gap-1 shrink-0"
+                            >
+                              {copiedDomain === item.domain ? (
+                                <>
+                                  <Check size={10} className="text-emerald-400" />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={10} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
