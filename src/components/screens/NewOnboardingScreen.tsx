@@ -376,23 +376,23 @@ export const NewOnboardingScreen: React.FC<NewOnboardingScreenProps> = ({
       ) : (
         <div className="relative z-10 w-full max-w-md mx-auto flex-1 flex flex-col justify-center my-3">
           {step === 1 && (
-            <div className="flex flex-col items-center justify-center space-y-5 animate-fadeIn">
-              <div className="relative flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center space-y-3.5 animate-fadeIn">
+              <div className="relative flex items-center justify-center w-full max-h-[220px]">
                 <div
                   className={`absolute inset-0 rounded-full blur-2xl transition-all duration-700 ${
-                    isJarvis ? 'bg-amber-500/25 scale-110' : 'bg-pink-500/25 scale-110'
+                    isJarvis ? 'bg-amber-500/20 scale-105' : 'bg-pink-500/20 scale-105'
                   }`}
                 />
                 <HolographicAvatar
                   character={selectedCompanion}
                   expression={isJarvis ? 'calm' : 'happy'}
-                  size="lg"
+                  size="md"
                   className="transition-transform duration-500 hover:scale-105"
                 />
               </div>
 
-              <div className="text-center space-y-1.5 px-2">
-                <h1 className="text-2xl sm:text-3xl font-bold font-comfortaa tracking-wide text-white">
+              <div className="text-center space-y-1 px-2">
+                <h1 className="text-xl sm:text-2xl font-bold font-comfortaa tracking-wide text-white">
                   Welcome to <span className={isJarvis ? 'text-amber-300' : 'text-pink-400'}>Alya AI</span>
                 </h1>
                 <p className="text-xs text-slate-300 leading-relaxed font-quicksand max-w-xs mx-auto">
@@ -400,7 +400,7 @@ export const NewOnboardingScreen: React.FC<NewOnboardingScreenProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-white/5 border border-white/10 w-full max-w-xs">
+              <div className="flex items-center gap-2.5 p-1 rounded-2xl bg-white/5 border border-white/10 w-full max-w-xs">
                 <button
                   type="button"
                   onClick={() => handleSwitchCompanion('alya')}
@@ -452,7 +452,7 @@ export const NewOnboardingScreen: React.FC<NewOnboardingScreenProps> = ({
                   setStep(2);
                   playChime('click');
                 }}
-                className={`w-full py-3.5 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${
+                className={`w-full py-3 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 ${
                   isJarvis
                     ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.35)]'
                     : 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white shadow-[0_0_25px_rgba(244,114,182,0.35)]'

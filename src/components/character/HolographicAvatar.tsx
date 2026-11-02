@@ -91,7 +91,8 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const particleCount = 42;
+    const isCompactViewport = typeof window !== 'undefined' && window.innerWidth < 500;
+    const particleCount = reduced ? 16 : isCompactViewport ? 28 : 42;
     const particles: Particle[] = Array.from({ length: particleCount }, (_, i) => {
       let type: Particle['type'] = 'spark';
       if (particleStyle === 'hearts') {
@@ -112,7 +113,7 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
         angle: (i / particleCount) * Math.PI * 2,
         radiusFactor: 0.82 + (i % 6) * 0.08,
         speed: 0.16 + (i % 5) * 0.05,
-        size: type === 'heart' ? 3.2 : type === 'petal' ? 2.8 : type === 'star' ? 2.4 : 1.2 + (i % 3) * 0.4,
+        size: type === 'heart' ? 3.0 : type === 'petal' ? 2.6 : type === 'star' ? 2.2 : 1.1 + (i % 3) * 0.4,
         phase: i * 0.72,
         tilt: (i % 5 - 2) * 0.22,
         type,
@@ -120,8 +121,8 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
       };
     });
 
-    let w = 640;
-    let h = 480;
+    let w = 320;
+    let h = 240;
     let time = 0;
     let last = performance.now();
     let visible = !document.hidden;
@@ -129,10 +130,10 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
     const resize = () => {
       const container = canvas.parentElement;
       const rect = container?.getBoundingClientRect();
-      const parentW = rect && rect.width > 0 ? rect.width : 640;
-      const parentH = rect && rect.height > 0 ? rect.height : 480;
-      w = Math.min(Math.max(340, Math.floor(parentW)), 880);
-      h = Math.min(Math.max(340, Math.floor(parentH)), 580);
+      const parentW = rect && rect.width > 0 ? rect.width : 320;
+      const parentH = rect && rect.height > 0 ? rect.height : 240;
+      w = Math.min(Math.max(180, Math.floor(parentW)), 760);
+      h = Math.min(Math.max(145, Math.floor(parentH)), 520);
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       canvas.style.width = '100%';
@@ -142,6 +143,13 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
 
     resize();
     window.addEventListener('resize', resize);
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' && canvas.parentElement
+        ? new ResizeObserver(() => resize())
+        : null;
+    if (resizeObserver && canvas.parentElement) {
+      resizeObserver.observe(canvas.parentElement);
+    }
 
     const mainHex = customColor || (isJarvis ? '#00e5ff' : '#ff269f');
 
@@ -367,7 +375,7 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
       tickMarks = false,
       nodesCount = 0
     ) => {
-      const steps = 72;
+      const steps = isCompactViewport ? 56 : 72;
       const points: { x: number; y: number; z: number; scale: number }[] = [];
       const fov = 340;
       const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
@@ -528,12 +536,12 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
       }
 
       const minDim = Math.min(w, h);
-      const baseR = Math.max(82, minDim * 0.19) * stateScale;
+      const baseR = Math.max(42, Math.min(minDim * 0.21, 102)) * stateScale;
 
       if (showPedestal) {
-        const pedY = h * 0.88;
-        const pedRx = Math.min(w * 0.36, 260);
-        const pedRy = pedRx * 0.22;
+        const pedY = h * 0.85;
+        const pedRx = Math.min(w * 0.34, baseR * 2.2, 230);
+        const pedRy = pedRx * 0.21;
         ctx.save();
         const beamCount = 9;
         for (let b = 0; b < beamCount; b++) {
@@ -770,6 +778,7 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('resize', resize);
+      if (resizeObserver) resizeObserver.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
@@ -781,10 +790,17 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
     ? 'Hello, I am Jarvis ⚡'
     : 'Hello, I am Alya 🌸';
 
+  const sizeClasses =
+    size === 'sm'
+      ? 'h-[135px] sm:h-[165px] max-w-[220px]'
+      : size === 'md'
+      ? 'h-[175px] sm:h-[220px] md:h-[250px] max-w-[300px]'
+      : 'w-full h-full min-h-[145px] max-h-[255px] sm:max-h-[340px] md:max-h-[420px] lg:max-h-[480px] max-w-[340px] sm:max-w-[440px] md:max-w-[540px]';
+
   return (
     <div
       onClick={handleInteraction}
-      className={`relative w-full max-w-3xl lg:max-w-4xl h-[400px] sm:h-[470px] md:h-[530px] lg:h-[580px] flex flex-col items-center justify-center cursor-pointer group select-none ${className}`}
+      className={`relative mx-auto flex flex-col items-center justify-center cursor-pointer group select-none ${sizeClasses} ${className}`}
       title={`${isJarvis ? 'Jarvis' : 'Alya'} Holographic AI Core • Tap to interact`}
     >
       <canvas
@@ -799,24 +815,24 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
             isJarvis ? 'border-cyan-300 bg-cyan-300/10' : 'border-pink-300 bg-pink-300/10'
           }`}
           style={{
-            left: rip.x - 38,
-            top: rip.y - 38,
-            width: 76,
-            height: 76,
+            left: rip.x - 32,
+            top: rip.y - 32,
+            width: 64,
+            height: 64,
           }}
         />
       ))}
 
       <div
-        className={`absolute bottom-2 px-4 py-1.5 rounded-full text-[11px] font-mono tracking-wide border shadow-lg backdrop-blur-xl transition-all duration-300 ${
+        className={`absolute bottom-1 sm:bottom-2 px-3 sm:px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-mono tracking-wide border shadow-lg backdrop-blur-xl transition-all duration-300 ${
           isJarvis
             ? 'bg-[#020d18]/85 border-cyan-400/40 text-cyan-200 shadow-[0_0_20px_rgba(0,210,255,0.25)]'
             : 'bg-[#1a0212]/85 border-pink-400/40 text-pink-200 shadow-[0_0_20px_rgba(255,38,159,0.25)]'
         }`}
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-1.5">
           <span
-            className={`w-2 h-2 rounded-full ${
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
               currentState === 'speaking'
                 ? 'bg-emerald-400 animate-ping'
                 : currentState === 'listening'
@@ -830,7 +846,7 @@ export const HolographicAvatar: React.FC<HolographicAvatarProps> = ({
                 : 'bg-pink-400 animate-pulse'
             }`}
           />
-          <span className="font-semibold">{badgeLabel}</span>
+          <span className="font-semibold whitespace-nowrap">{badgeLabel}</span>
         </span>
       </div>
     </div>

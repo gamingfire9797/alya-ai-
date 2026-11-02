@@ -14949,14 +14949,16 @@ var AnimatedCompanionBackground = ({ character }) => {
 		const ctx = canvas?.getContext("2d");
 		if (!canvas || !ctx) return;
 		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-		const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+		const isMobileScreen = typeof window !== "undefined" && window.innerWidth < 600;
+		const dpr = Math.min(window.devicePixelRatio || 1, isMobileScreen ? 1.35 : 1.6);
 		const isJarvis = character === "jarvis";
 		let width = 1;
 		let height = 1;
 		let time = 0;
 		let last = performance.now();
 		let visible = !document.hidden;
-		const stars = Array.from({ length: 110 }, (_, i) => ({
+		const starCount = reduced ? 35 : isMobileScreen ? 65 : 110;
+		const stars = Array.from({ length: starCount }, (_, i) => ({
 			x: Math.random(),
 			y: Math.random(),
 			r: i % 8 === 0 ? 1.6 + Math.random() * 1.4 : .35 + Math.random() * .9,
@@ -14980,7 +14982,8 @@ var AnimatedCompanionBackground = ({ character }) => {
 			"#c084fc",
 			"#ffd226"
 		];
-		const petals = Array.from({ length: 34 }, (_, i) => ({
+		const petalCount = reduced ? 0 : isMobileScreen ? 18 : 34;
+		const petals = Array.from({ length: petalCount }, (_, i) => ({
 			x: Math.random() * (typeof window !== "undefined" ? window.innerWidth : 600),
 			y: Math.random() * (typeof window !== "undefined" ? window.innerHeight : 800),
 			size: 5.5 + Math.random() * 5,
@@ -14995,6 +14998,7 @@ var AnimatedCompanionBackground = ({ character }) => {
 		}));
 		let lastMeteorSpawn = performance.now();
 		const spawnShootingStar = (now) => {
+			if (reduced) return;
 			if (now - lastMeteorSpawn > 1800 + Math.random() * 2e3) {
 				lastMeteorSpawn = now;
 				const color = colors[Math.floor(Math.random() * colors.length)];
@@ -15332,23 +15336,6 @@ var AtSign = createLucideIcon("at-sign", [["circle", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
-var Battery = createLucideIcon("battery", [["path", {
-	d: "M 22 14 L 22 10",
-	key: "nqc4tb"
-}], ["rect", {
-	x: "2",
-	y: "6",
-	width: "16",
-	height: "12",
-	rx: "2",
-	key: "13zb55"
-}]]);
-/**
-* @license lucide-react v0.546.0 - ISC
-*
-* This source code is licensed under the ISC license.
-* See the LICENSE file in the root directory of this source tree.
-*/
 var BookOpen = createLucideIcon("book-open", [["path", {
 	d: "M12 7v14",
 	key: "1akyts"
@@ -15442,6 +15429,23 @@ var Brain = createLucideIcon("brain", [
 		key: "q97ue3"
 	}]
 ]);
+/**
+* @license lucide-react v0.546.0 - ISC
+*
+* This source code is licensed under the ISC license.
+* See the LICENSE file in the root directory of this source tree.
+*/
+var Briefcase = createLucideIcon("briefcase", [["path", {
+	d: "M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16",
+	key: "jecpp"
+}], ["rect", {
+	width: "20",
+	height: "14",
+	x: "2",
+	y: "6",
+	rx: "2",
+	key: "i6l2r4"
+}]]);
 /**
 * @license lucide-react v0.546.0 - ISC
 *
@@ -17207,34 +17211,6 @@ var Shield = createLucideIcon("shield", [["path", {
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
-var Signal = createLucideIcon("signal", [
-	["path", {
-		d: "M2 20h.01",
-		key: "4haj6o"
-	}],
-	["path", {
-		d: "M7 20v-4",
-		key: "j294jx"
-	}],
-	["path", {
-		d: "M12 20v-8",
-		key: "i3yub9"
-	}],
-	["path", {
-		d: "M17 20V8",
-		key: "1tkaf5"
-	}],
-	["path", {
-		d: "M22 4v16",
-		key: "sih9yq"
-	}]
-]);
-/**
-* @license lucide-react v0.546.0 - ISC
-*
-* This source code is licensed under the ISC license.
-* See the LICENSE file in the root directory of this source tree.
-*/
 var SlidersVertical = createLucideIcon("sliders-vertical", [
 	["path", {
 		d: "M10 8h4",
@@ -17597,30 +17573,6 @@ var WandSparkles = createLucideIcon("wand-sparkles", [
 * This source code is licensed under the ISC license.
 * See the LICENSE file in the root directory of this source tree.
 */
-var Wifi = createLucideIcon("wifi", [
-	["path", {
-		d: "M12 20h.01",
-		key: "zekei9"
-	}],
-	["path", {
-		d: "M2 8.82a15 15 0 0 1 20 0",
-		key: "dnpr2z"
-	}],
-	["path", {
-		d: "M5 12.859a10 10 0 0 1 14 0",
-		key: "1x1e6c"
-	}],
-	["path", {
-		d: "M8.5 16.429a5 5 0 0 1 7 0",
-		key: "1bycff"
-	}]
-]);
-/**
-* @license lucide-react v0.546.0 - ISC
-*
-* This source code is licensed under the ISC license.
-* See the LICENSE file in the root directory of this source tree.
-*/
 var X = createLucideIcon("x", [["path", {
 	d: "M18 6 6 18",
 	key: "1bl5f8"
@@ -17653,23 +17605,13 @@ var Zap = createLucideIcon("zap", [["path", {
 }]]);
 //#endregion
 //#region src/components/navigation/TopBar.tsx
-var TopBar = ({ currentScreen, onNavigate, onOpenMenu, onHeartTap, isPhoneFrame, onTogglePhoneFrame, companionStatus = "Online", character = "alya", floatingMiniVisible = false, onToggleFloatingMini }) => {
+var TopBar = ({ currentScreen, onNavigate, onOpenMenu, isPhoneFrame, onTogglePhoneFrame, companionStatus = "Online", character = "alya", floatingMiniVisible = false, onToggleFloatingMini }) => {
 	const isHome = currentScreen === "home";
 	const isJarvis = character === "jarvis";
-	const [headerClock, setHeaderClock] = (0, import_react.useState)(() => TimeEngine.formatHeaderClock());
-	const [tzCode, setTzCode] = (0, import_react.useState)(() => TimeEngine.getTimezoneShort());
-	(0, import_react.useEffect)(() => {
-		const updateTime = () => {
-			setHeaderClock(TimeEngine.formatHeaderClock());
-			setTzCode(TimeEngine.getTimezoneShort());
-		};
-		const timer = setInterval(updateTime, 1e4);
-		return () => clearInterval(timer);
-	}, []);
+	if (isHome || currentScreen === "voice" || currentScreen === "work") return null;
 	const getScreenTitle = () => {
 		switch (currentScreen) {
 			case "chat": return isJarvis ? "Jarvis Chat" : "Live AI Chat";
-			case "voice": return isJarvis ? "Jarvis Voice Call" : "Alya Voice Call";
 			case "memory": return "Memory Bank";
 			case "backgrounds": return "Backgrounds & Ambience";
 			case "phone_control": return "Phone Control";
@@ -17677,97 +17619,76 @@ var TopBar = ({ currentScreen, onNavigate, onOpenMenu, onHeartTap, isPhoneFrame,
 			case "settings": return "Settings";
 			case "studio": return "AI Core Studio";
 			case "slides": return "Google Slides AI";
-			case "work": return isJarvis ? "Jarvis Workstation" : "Alya Workstation";
+			case "help": return "Getting Started Guide";
 			case "about": return isJarvis ? "About Jarvis" : "About Alya";
 			default: return isJarvis ? "Jarvis" : "Alya";
 		}
 	};
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
-		className: "w-full select-none z-30 flex flex-col",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "w-full flex items-center justify-between px-5 pt-2 pb-1 text-[11px] font-semibold text-slate-300/80 tracking-wide",
-			children: [
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-1.5",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "font-mono text-white/90",
-							title: `Live time (${tzCode})`,
-							children: headerClock
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-							type: "button",
-							onClick: onTogglePhoneFrame,
-							title: isPhoneFrame ? "Switch to Fullscreen view" : "Switch to Android phone frame",
-							className: "ml-2 px-1.5 py-0.5 rounded bg-white/10 hover:bg-pink-500/20 text-[9px] text-pink-300 border border-white/10 transition-colors flex items-center gap-1",
-							children: [isPhoneFrame ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Monitor, { size: 10 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Smartphone, { size: 10 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: isPhoneFrame ? "Full" : "Phone" })]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
-							type: "button",
-							onClick: () => onNavigate(currentScreen === "work" ? "home" : "work"),
-							title: "Switch between Normal Voice Mode and Work Mode",
-							className: `ml-1 px-2 py-0.5 rounded text-[9px] font-bold border transition-all flex items-center gap-1 ${currentScreen === "work" ? isJarvis ? "bg-cyan-500 text-white border-cyan-400 shadow-[0_0_8px_rgba(0,229,255,0.6)]" : "bg-pink-500 text-white border-pink-400 shadow-[0_0_8px_rgba(255,38,159,0.6)]" : isJarvis ? "bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 border-cyan-500/35" : "bg-pink-950/60 hover:bg-pink-900/60 text-pink-200 border-pink-500/35"}`,
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Laptop, { size: 10 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: currentScreen === "work" ? "Voice Mode" : "Work Mode" })]
-						}),
-						onToggleFloatingMini && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							type: "button",
-							onClick: onToggleFloatingMini,
-							title: "Toggle Floating Alya Avatar Overlay",
-							className: `ml-1 px-2 py-0.5 rounded text-[9px] font-bold border transition-all flex items-center gap-1 ${floatingMiniVisible ? "bg-pink-500 text-white border-pink-400 shadow-[0_0_8px_rgba(255,38,159,0.6)]" : "bg-white/10 hover:bg-pink-500/20 text-pink-200 border-white/15"}`,
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "🌸 Mini" })
-						})
-					]
-				}),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "w-3.5 h-3.5 rounded-full bg-black/60 border border-pink-500/20 shadow-inner" }),
-				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Signal, {
-							size: 12,
-							className: "text-slate-200"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Wifi, {
-							size: 12,
-							className: "text-slate-200"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-0.5",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[10px]",
-								children: "98%"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Battery, {
-								size: 13,
-								className: "text-slate-200"
-							})]
-						})
-					]
-				})
-			]
-		}), !isHome && currentScreen !== "voice" && currentScreen !== "work" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "w-full flex items-center justify-between px-4 py-2.5",
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("header", {
+		className: "w-full select-none z-30 shrink-0 border-b border-white/10 bg-[#070210]/80 backdrop-blur-xl",
+		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			className: "w-full max-w-4xl lg:max-w-5xl mx-auto flex items-center justify-between px-3 sm:px-5 py-2",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex items-center gap-3",
+				className: "flex items-center gap-2.5 min-w-0",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 					type: "button",
 					onClick: () => onNavigate("home"),
-					className: `w-9 h-9 rounded-full glass-panel-subtle flex items-center justify-center text-slate-200 active:scale-95 transition-all ${isJarvis ? "hover:text-amber-400 hover:border-amber-500/40" : "hover:text-pink-400 hover:border-pink-500/40"}`,
-					"aria-label": "Go back",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { size: 20 })
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
-					className: "text-lg font-bold text-slate-100 font-jakarta drop-shadow-sm",
-					children: getScreenTitle()
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-					className: `text-[10px] flex items-center gap-1 ${isJarvis ? "text-amber-400/90" : "text-pink-400/90"}`,
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400" }), isJarvis ? "Jarvis • Standing By" : "Alya • Online"]
-				})] })]
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-				type: "button",
-				onClick: onOpenMenu,
-				className: `w-10 h-10 rounded-full glass-panel flex items-center justify-center text-slate-100 active:scale-95 transition-all ${isJarvis ? "hover:text-amber-300 hover:border-amber-500/50 hover:shadow-[0_0_15px_rgba(245,158,11,0.4)]" : "hover:text-pink-300 hover:border-pink-500/50 hover:shadow-[0_0_15px_rgba(244,114,182,0.4)]"}`,
-				"aria-label": "Open menu drawer",
-				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, { size: 20 })
+					className: `w-8 h-8 sm:w-9 sm:h-9 rounded-xl glass-panel-subtle flex items-center justify-center text-slate-200 active:scale-95 transition-all shrink-0 ${isJarvis ? "hover:text-amber-400 hover:border-amber-500/40" : "hover:text-pink-400 hover:border-pink-500/40"}`,
+					"aria-label": "Go back to Home",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { size: 18 })
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+						className: "text-sm sm:text-base font-bold text-slate-100 font-jakarta truncate leading-tight",
+						children: getScreenTitle()
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+						className: `text-[10px] flex items-center gap-1 leading-tight ${isJarvis ? "text-amber-400/90" : "text-pink-400/90"}`,
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "truncate",
+							children: isJarvis ? `Jarvis • ${companionStatus}` : `Alya • ${companionStatus}`
+						})]
+					})]
+				})]
+			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-center gap-1.5 shrink-0",
+				children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+						type: "button",
+						onClick: () => onNavigate("work"),
+						title: "Switch to Work Mode",
+						className: `px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${isJarvis ? "bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-200 border-cyan-500/35" : "bg-pink-950/60 hover:bg-pink-900/60 text-pink-200 border-pink-500/35"}`,
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Laptop, { size: 11 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "hidden xs:inline",
+							children: "Work"
+						})]
+					}),
+					onToggleFloatingMini && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+						type: "button",
+						onClick: onToggleFloatingMini,
+						title: "Toggle Floating Alya Avatar Overlay",
+						className: `px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${floatingMiniVisible ? "bg-pink-500 text-white border-pink-400 shadow-[0_0_8px_rgba(255,38,159,0.5)]" : "bg-white/10 hover:bg-pink-500/20 text-pink-200 border-white/15"}`,
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "🌸" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							className: "hidden sm:inline",
+							children: "Mini"
+						})]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+						type: "button",
+						onClick: onTogglePhoneFrame,
+						title: isPhoneFrame ? "Switch to Fullscreen view" : "Preview Phone Frame (Desktop)",
+						className: "hidden lg:flex px-2 py-1 rounded-lg bg-white/10 hover:bg-pink-500/20 text-[10px] text-pink-300 border border-white/10 transition-colors items-center gap-1",
+						children: [isPhoneFrame ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Monitor, { size: 11 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Smartphone, { size: 11 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: isPhoneFrame ? "Full" : "Frame" })]
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+						type: "button",
+						onClick: onOpenMenu,
+						className: `w-8 h-8 sm:w-9 sm:h-9 rounded-xl glass-panel flex items-center justify-center text-slate-100 active:scale-95 transition-all ${isJarvis ? "hover:text-amber-300 hover:border-amber-500/50" : "hover:text-pink-300 hover:border-pink-500/50"}`,
+						"aria-label": "Open menu drawer",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, { size: 18 })
+					})
+				]
 			})]
-		})]
+		})
 	});
 };
 //#endregion
@@ -18933,7 +18854,8 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 		if (!canvas || !ctx) return;
 		const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		const particleCount = 42;
+		const isCompactViewport = typeof window !== "undefined" && window.innerWidth < 500;
+		const particleCount = reduced ? 16 : isCompactViewport ? 28 : 42;
 		const particles = Array.from({ length: particleCount }, (_, i) => {
 			let type = "spark";
 			if (particleStyle === "hearts") type = i % 2 === 0 ? "heart" : "spark";
@@ -18945,24 +18867,24 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 				angle: i / particleCount * Math.PI * 2,
 				radiusFactor: .82 + i % 6 * .08,
 				speed: .16 + i % 5 * .05,
-				size: type === "heart" ? 3.2 : type === "petal" ? 2.8 : type === "star" ? 2.4 : 1.2 + i % 3 * .4,
+				size: type === "heart" ? 3 : type === "petal" ? 2.6 : type === "star" ? 2.2 : 1.1 + i % 3 * .4,
 				phase: i * .72,
 				tilt: (i % 5 - 2) * .22,
 				type,
 				alpha: .4 + Math.random() * .5
 			};
 		});
-		let w = 640;
-		let h = 480;
+		let w = 320;
+		let h = 240;
 		let time = 0;
 		let last = performance.now();
 		let visible = !document.hidden;
 		const resize = () => {
 			const rect = canvas.parentElement?.getBoundingClientRect();
-			const parentW = rect && rect.width > 0 ? rect.width : 640;
-			const parentH = rect && rect.height > 0 ? rect.height : 480;
-			w = Math.min(Math.max(340, Math.floor(parentW)), 880);
-			h = Math.min(Math.max(340, Math.floor(parentH)), 580);
+			const parentW = rect && rect.width > 0 ? rect.width : 320;
+			const parentH = rect && rect.height > 0 ? rect.height : 240;
+			w = Math.min(Math.max(180, Math.floor(parentW)), 760);
+			h = Math.min(Math.max(145, Math.floor(parentH)), 520);
 			canvas.width = Math.floor(w * dpr);
 			canvas.height = Math.floor(h * dpr);
 			canvas.style.width = "100%";
@@ -18971,6 +18893,8 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 		};
 		resize();
 		window.addEventListener("resize", resize);
+		const resizeObserver = typeof ResizeObserver !== "undefined" && canvas.parentElement ? new ResizeObserver(() => resize()) : null;
+		if (resizeObserver && canvas.parentElement) resizeObserver.observe(canvas.parentElement);
 		const mainHex = customColor || (isJarvis ? "#00e5ff" : "#ff269f");
 		const drawCelestialEyeStar = (cx, cy, r, alpha) => {
 			ctx.save();
@@ -19165,7 +19089,7 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 			ctx.restore();
 		};
 		const draw3DGlowCrown = (radius, rotX, rotY, rotZ, strokeColor, lineWidth, drawPhoton = true, photonSpeed = 1, dashPattern, tickMarks = false, nodesCount = 0) => {
-			const steps = 72;
+			const steps = isCompactViewport ? 56 : 72;
 			const points = [];
 			const fov = 340;
 			const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
@@ -19315,11 +19239,11 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 					speedFactor = 1;
 					glowMultiplier = 1;
 			}
-			const baseR = Math.max(82, Math.min(w, h) * .19) * stateScale;
+			const baseR = Math.max(42, Math.min(Math.min(w, h) * .21, 102)) * stateScale;
 			if (showPedestal) {
-				const pedY = h * .88;
-				const pedRx = Math.min(w * .36, 260);
-				const pedRy = pedRx * .22;
+				const pedY = h * .85;
+				const pedRx = Math.min(w * .34, baseR * 2.2, 230);
+				const pedRy = pedRx * .21;
 				ctx.save();
 				const beamCount = 9;
 				for (let b = 0; b < beamCount; b++) {
@@ -19503,6 +19427,7 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 		document.addEventListener("visibilitychange", onVisibility);
 		return () => {
 			window.removeEventListener("resize", resize);
+			if (resizeObserver) resizeObserver.disconnect();
 			document.removeEventListener("visibilitychange", onVisibility);
 			if (frameRef.current) cancelAnimationFrame(frameRef.current);
 		};
@@ -19517,7 +19442,7 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 	const badgeLabel = stateBadgeText ? stateBadgeText : isJarvis ? "Hello, I am Jarvis ⚡" : "Hello, I am Alya 🌸";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		onClick: handleInteraction,
-		className: `relative w-full max-w-3xl lg:max-w-4xl h-[400px] sm:h-[470px] md:h-[530px] lg:h-[580px] flex flex-col items-center justify-center cursor-pointer group select-none ${className}`,
+		className: `relative mx-auto flex flex-col items-center justify-center cursor-pointer group select-none ${size === "sm" ? "h-[135px] sm:h-[165px] max-w-[220px]" : size === "md" ? "h-[175px] sm:h-[220px] md:h-[250px] max-w-[300px]" : "w-full h-full min-h-[145px] max-h-[255px] sm:max-h-[340px] md:max-h-[420px] lg:max-h-[480px] max-w-[340px] sm:max-w-[440px] md:max-w-[540px]"} ${className}`,
 		title: `${isJarvis ? "Jarvis" : "Alya"} Holographic AI Core • Tap to interact`,
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
@@ -19527,18 +19452,18 @@ var HolographicAvatar = ({ character, expression = "normal", isSpeaking = false,
 			ripples.map((rip) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 				className: `absolute rounded-full pointer-events-none border animate-[coreRipple_900ms_ease-out_forwards] ${isJarvis ? "border-cyan-300 bg-cyan-300/10" : "border-pink-300 bg-pink-300/10"}`,
 				style: {
-					left: rip.x - 38,
-					top: rip.y - 38,
-					width: 76,
-					height: 76
+					left: rip.x - 32,
+					top: rip.y - 32,
+					width: 64,
+					height: 64
 				}
 			}, rip.id)),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: `absolute bottom-2 px-4 py-1.5 rounded-full text-[11px] font-mono tracking-wide border shadow-lg backdrop-blur-xl transition-all duration-300 ${isJarvis ? "bg-[#020d18]/85 border-cyan-400/40 text-cyan-200 shadow-[0_0_20px_rgba(0,210,255,0.25)]" : "bg-[#1a0212]/85 border-pink-400/40 text-pink-200 shadow-[0_0_20px_rgba(255,38,159,0.25)]"}`,
+				className: `absolute bottom-1 sm:bottom-2 px-3 sm:px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-mono tracking-wide border shadow-lg backdrop-blur-xl transition-all duration-300 ${isJarvis ? "bg-[#020d18]/85 border-cyan-400/40 text-cyan-200 shadow-[0_0_20px_rgba(0,210,255,0.25)]" : "bg-[#1a0212]/85 border-pink-400/40 text-pink-200 shadow-[0_0_20px_rgba(255,38,159,0.25)]"}`,
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-2 h-2 rounded-full ${currentState === "speaking" ? "bg-emerald-400 animate-ping" : currentState === "listening" ? "bg-rose-400 animate-ping" : currentState === "thinking" || currentState === "processing" ? "bg-cyan-400 animate-pulse" : currentState === "responding" ? "bg-amber-400 animate-bounce" : isJarvis ? "bg-cyan-400" : "bg-pink-400 animate-pulse"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "font-semibold",
+					className: "flex items-center gap-1.5",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${currentState === "speaking" ? "bg-emerald-400 animate-ping" : currentState === "listening" ? "bg-rose-400 animate-ping" : currentState === "thinking" || currentState === "processing" ? "bg-cyan-400 animate-pulse" : currentState === "responding" ? "bg-amber-400 animate-bounce" : isJarvis ? "bg-cyan-400" : "bg-pink-400 animate-pulse"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "font-semibold whitespace-nowrap",
 						children: badgeLabel
 					})]
 				})
@@ -19623,21 +19548,21 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 	const orbStyle = getOrbStateClasses();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("nav", {
 		"aria-label": "Companion Controls Navigation",
-		className: "relative w-full max-w-xl mx-auto px-1 sm:px-2 z-20 select-none",
+		className: "relative w-full max-w-xl mx-auto px-0.5 sm:px-2 z-20 select-none",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: `relative w-full rounded-[32px] sm:rounded-full backdrop-blur-2xl px-2 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300 border ${isJarvis ? "bg-gradient-to-b from-[#081326]/90 via-[#040b17]/92 to-[#02050c]/96 border-cyan-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_28px_rgba(0,229,255,0.22),inset_0_1px_1px_rgba(255,255,255,0.18)]" : "bg-gradient-to-b from-[#140827]/90 via-[#0c0419]/92 to-[#070210]/96 border-pink-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_30px_rgba(255,38,159,0.25),inset_0_1px_1px_rgba(255,255,255,0.18)]"}`,
+			className: `relative w-full rounded-[28px] sm:rounded-full backdrop-blur-xl px-1.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-0.5 sm:gap-2 transition-all duration-300 border ${isJarvis ? "bg-gradient-to-b from-[#081326]/90 via-[#040b17]/92 to-[#02050c]/96 border-cyan-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.8),0_0_22px_rgba(0,229,255,0.2),inset_0_1px_1px_rgba(255,255,255,0.18)]" : "bg-gradient-to-b from-[#140827]/90 via-[#0c0419]/92 to-[#070210]/96 border-pink-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.8),0_0_24px_rgba(255,38,159,0.22),inset_0_1px_1px_rgba(255,255,255,0.18)]"}`,
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute top-0 inset-x-8 sm:inset-x-14 h-[1.5px] pointer-events-none ${isJarvis ? "bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" : "bg-gradient-to-r from-transparent via-pink-400/75 to-transparent"}` }),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: `hidden sm:flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70`,
+					className: "hidden sm:flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-1 h-3.5 rounded-full ${isJarvis ? "bg-cyan-400 shadow-[0_0_6px_rgba(0,229,255,0.8)]" : "bg-pink-400 shadow-[0_0_6px_rgba(255,38,159,0.8)]"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-0.5 h-2 rounded-full ${isJarvis ? "bg-cyan-500/50" : "bg-pink-500/50"}` })]
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: `hidden sm:flex items-center gap-1 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70`,
+					className: "hidden sm:flex items-center gap-1 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-0.5 h-2 rounded-full ${isJarvis ? "bg-blue-500/50" : "bg-purple-500/50"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-1 h-3.5 rounded-full ${isJarvis ? "bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.8)]" : "bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.8)]"}` })]
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center justify-evenly flex-1 gap-1 sm:gap-2",
+					className: "flex items-center justify-evenly flex-1 gap-0.5 sm:gap-2",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "flex flex-col items-center group",
@@ -19650,15 +19575,15 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 									if (isHolding) handleHoldEnd();
 								},
 								onContextMenu: (e) => e.preventDefault(),
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 select-none shadow-md border ${isHolding ? isJarvis ? "bg-cyan-500 text-white border-cyan-300 shadow-[0_0_22px_rgba(0,229,255,0.9)] scale-95" : "bg-pink-500 text-white border-pink-300 shadow-[0_0_22px_rgba(255,46,144,0.9)] scale-95" : isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/90 border-cyan-500/30 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.45)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/90 border-pink-500/30 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.45)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 select-none shadow-md border ${isHolding ? isJarvis ? "bg-cyan-500 text-white border-cyan-300 shadow-[0_0_20px_rgba(0,229,255,0.9)] scale-95" : "bg-pink-500 text-white border-pink-300 shadow-[0_0_20px_rgba(255,46,144,0.9)] scale-95" : isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/90 border-cyan-500/30 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/90 border-pink-500/30 hover:border-pink-400 hover:text-white"}`,
 								title: "Hold-to-Talk (Press & HOLD to speak, release to send)",
 								"aria-label": "Hold to talk",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: `text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none transition-colors ${isHolding ? isJarvis ? "text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]" : "text-pink-300 font-black drop-shadow-[0_0_6px_rgba(255,46,144,0.8)]" : "text-slate-400 group-hover:text-slate-200"}`,
+								className: `text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none transition-colors ${isHolding ? isJarvis ? "text-cyan-300 font-black" : "text-pink-300 font-black" : "text-slate-400 group-hover:text-slate-200"}`,
 								children: "Hold"
 							})]
 						}),
@@ -19667,15 +19592,15 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onAttachImage,
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white"}`,
 								title: "Attach Image for Visual Analysis",
 								"aria-label": "Attach Image",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200",
+								className: "text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200",
 								children: "Image"
 							})]
 						}),
@@ -19684,15 +19609,15 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onOpenStudio || onOpenDrawer,
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white"}`,
 								title: "Companion Studio & Customization",
 								"aria-label": "Studio settings",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200",
+								className: "text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200",
 								children: "Studio"
 							})]
 						})
@@ -19703,25 +19628,25 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "relative flex items-center justify-center",
 						children: [
-							isListening && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `absolute -inset-3 sm:-inset-4 rounded-full opacity-65 animate-ping pointer-events-none ${isJarvis ? "bg-cyan-400" : "bg-rose-500"}` }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -inset-2 sm:-inset-2.5 rounded-full border border-dashed pointer-events-none animate-orb-ring transition-opacity duration-300 ${orbStyle.outerRingColor}` }),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -inset-1 sm:-inset-1.5 rounded-full border pointer-events-none transition-all duration-300 ${orbStyle.ringColor}` }),
+							isListening && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `absolute -inset-2.5 sm:-inset-3.5 rounded-full opacity-65 animate-ping pointer-events-none ${isJarvis ? "bg-cyan-400" : "bg-rose-500"}` }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -inset-1.5 sm:-inset-2 rounded-full border border-dashed pointer-events-none animate-orb-ring transition-opacity duration-300 ${orbStyle.outerRingColor}` }),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -inset-0.5 sm:-inset-1 rounded-full border pointer-events-none transition-all duration-300 ${orbStyle.ringColor}` }),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
 								onClick: onToggleVoice,
-								className: `relative w-14 h-14 sm:w-16 sm:h-16 md:w-[68px] md:h-[68px] rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95 group overflow-hidden ${orbStyle.bg} ${orbStyle.glow}`,
+								className: `relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95 group overflow-hidden ${orbStyle.bg} ${orbStyle.glow}`,
 								title: isListening ? "Active Listening (Tap to turn off)" : isSpeaking ? "Companion Speaking (Tap to interrupt)" : isThinking ? "Processing Response..." : isAutoVoiceActive ? "Auto Voice Ready (Hands-Free)" : "Tap to start Voice AI Mode",
 								"aria-label": isListening ? "Stop listening" : isAutoVoiceActive ? "Auto Voice active" : "Start voice conversation",
 								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute top-1 inset-x-2.5 sm:inset-x-3 h-4 sm:h-5 rounded-full bg-gradient-to-b from-white/65 via-white/25 to-transparent pointer-events-none" }),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute bottom-1 inset-x-3 h-2.5 rounded-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" }),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute top-1 inset-x-2 sm:inset-x-2.5 h-3.5 sm:h-4 rounded-full bg-gradient-to-b from-white/65 via-white/25 to-transparent pointer-events-none" }),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute bottom-1 inset-x-2.5 h-2 rounded-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" }),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 										className: "relative z-10 transition-transform duration-200 group-hover:scale-110",
 										children: isListening ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MicOff, {
-											size: 26,
+											size: 22,
 											className: "text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
 										}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, {
-											size: 26,
+											size: 22,
 											className: "text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
 										})
 									})
@@ -19729,27 +19654,27 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 							})
 						]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: `text-[9px] font-black tracking-widest uppercase mt-1 leading-none select-none transition-colors ${orbStyle.labelColor}`,
+						className: `text-[8px] sm:text-[9px] font-black tracking-widest uppercase mt-0.5 leading-none select-none transition-colors ${orbStyle.labelColor}`,
 						children: orbStyle.label
 					})]
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center justify-evenly flex-1 gap-1 sm:gap-2",
+					className: "flex items-center justify-evenly flex-1 gap-0.5 sm:gap-2",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "flex flex-col items-center group",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onOpenVoice,
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white"}`,
 								title: "Voice Call & Audio Visualizer Screen",
 								"aria-label": "Voice screen",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Sparkles, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200",
+								className: "text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200",
 								children: "Voice"
 							})]
 						}),
@@ -19758,15 +19683,15 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onOpenChat,
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white"}`,
 								title: "Open Full Chat Interface",
 								"aria-label": "Open chat",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MessageSquare, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200",
+								className: "text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200",
 								children: "Chat"
 							})]
 						}),
@@ -19775,15 +19700,15 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onOpenDrawer,
-								className: `w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${isJarvis ? "bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white" : "bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white"}`,
 								title: "Open System Menu & Tools",
 								"aria-label": "Open menu",
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, {
-									size: 18,
+									size: 16,
 									className: "shrink-0 transition-transform group-hover:scale-110"
 								})
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200",
+								className: "text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200",
 								children: "Menu"
 							})]
 						})
@@ -19795,7 +19720,7 @@ var FuturisticBottomBar = ({ isJarvis, isListening, isSpeaking, isThinking, isAu
 };
 //#endregion
 //#region src/components/screens/HomeScreen.tsx
-var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isListening, isThinking, userName, messages = [], avatarSize = "md", onChangeAvatarSize, onSendMessage, onOpenChat, onOpenVoice, onOpenVoiceSettings, onOpenDrawer, hasGeminiKey, onToggleVoice, isAutoVoiceActive = false, onHoldToTalkStart, onHoldToTalkEnd, lastVoiceTranscript = "", onCancelVoice, recognitionState = "idle", micErrorMessage, onClearMicError, onOpenStudio, onOpenMemory, onOpenBackgrounds, onOpenSettings, onOpenProfile, onOpenTools, onOpenPersonality, onOpenAutoFeatures, autoFeatures, coreCustomization, onSpeakMessage }) => {
+var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isListening, isThinking, userName, messages = [], avatarSize = "md", onChangeAvatarSize, onSendMessage, onOpenChat, onOpenVoice, onOpenVoiceSettings, onOpenDrawer, hasGeminiKey, onToggleVoice, isAutoVoiceActive = false, onHoldToTalkStart, onHoldToTalkEnd, lastVoiceTranscript = "", onCancelVoice, recognitionState = "idle", micErrorMessage, onClearMicError, onOpenStudio, onOpenMemory, onOpenBackgrounds, onOpenSettings, onOpenProfile, onOpenTools, onOpenPersonality, onOpenAutoFeatures, onOpenWorkMode, floatingMiniVisible = false, onToggleFloatingMini, autoFeatures, coreCustomization, onSpeakMessage }) => {
 	const [inputText, setInputText] = (0, import_react.useState)("");
 	const [selectedImage, setSelectedImage] = (0, import_react.useState)(null);
 	const fileInputRef = (0, import_react.useRef)(null);
@@ -19836,43 +19761,71 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 				className: "hidden"
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 pt-3 pb-1 flex flex-col gap-2",
+				className: "relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-3 sm:px-6 pt-2 pb-1 flex flex-col gap-1.5 shrink-0",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "w-full flex items-center justify-between",
+					className: "w-full flex items-center justify-between gap-1",
 					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							type: "button",
-							onClick: onOpenDrawer,
-							className: "w-10 h-10 rounded-2xl bg-black/40 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
-							title: "Open Menu",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, { size: 18 })
-						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "text-center flex flex-col items-center",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-								className: `text-lg sm:text-xl font-bold tracking-wide font-comfortaa flex items-center gap-1.5 ${isJarvis ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-blue-400 drop-shadow-[0_0_12px_rgba(0,229,255,0.4)]" : "text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-purple-300 drop-shadow-[0_0_12px_rgba(255,38,159,0.4)]"}`,
-								children: isJarvis ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡ Jarvis" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya 🌸" })
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-[10px] text-slate-400 tracking-wider font-medium",
-								children: isJarvis ? "Your Intelligent AI Assistant" : "Your Personal AI Companion"
+							className: "flex items-center gap-1.5",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								onClick: onOpenDrawer,
+								className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
+								title: "Open Menu",
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Menu, { size: 17 })
+							}), onOpenWorkMode && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								type: "button",
+								onClick: onOpenWorkMode,
+								className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${isJarvis ? "border-cyan-500/25 hover:border-cyan-400 text-cyan-200" : "border-pink-500/25 hover:border-pink-400 text-pink-200"}`,
+								title: "Open Work Mode",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Briefcase, {
+									size: 13,
+									className: isJarvis ? "text-cyan-400" : "text-pink-400"
+								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "text-[10px] font-semibold",
+									children: "Work"
+								})]
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-1.5",
+							className: "text-center flex flex-col items-center min-w-0",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+								className: `text-base sm:text-lg font-bold tracking-wide font-comfortaa flex items-center gap-1 ${isJarvis ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-blue-400 drop-shadow-[0_0_12px_rgba(0,229,255,0.4)]" : "text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-purple-300 drop-shadow-[0_0_12px_rgba(255,38,159,0.4)]"}`,
+								children: isJarvis ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡ Jarvis" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya 🌸" })
+							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-[9px] sm:text-[10px] text-slate-400 tracking-wider font-medium leading-tight",
+								children: isJarvis ? "Intelligent AI Assistant" : "Personal AI Companion"
+							})]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center gap-1",
 							children: [
+								onToggleFloatingMini && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+									type: "button",
+									onClick: onToggleFloatingMini,
+									className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${floatingMiniVisible ? "border-emerald-400/70 bg-emerald-950/40 text-emerald-200" : "border-white/10 text-slate-300 hover:text-white"}`,
+									title: "Toggle Mini Floating Avatar",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Layers, {
+										size: 13,
+										className: floatingMiniVisible ? "text-emerald-400" : "text-slate-400"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "text-[10px] font-semibold hidden sm:inline",
+										children: "Mini"
+									})]
+								}),
 								onOpenAutoFeatures && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 									type: "button",
 									onClick: onOpenAutoFeatures,
-									className: `h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${autoFeatures?.autoListen ? isJarvis ? "border-cyan-400/80 bg-cyan-950/40 text-cyan-200 shadow-[0_0_12px_rgba(0,229,255,0.3)]" : "border-pink-400/80 bg-pink-950/40 text-pink-200 shadow-[0_0_12px_rgba(255,38,159,0.3)]" : "border-white/10 text-slate-300 hover:text-white"}`,
+									className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${autoFeatures?.autoListen ? isJarvis ? "border-cyan-400/80 bg-cyan-950/40 text-cyan-200 shadow-[0_0_12px_rgba(0,229,255,0.3)]" : "border-pink-400/80 bg-pink-950/40 text-pink-200 shadow-[0_0_12px_rgba(255,38,159,0.3)]" : "border-white/10 text-slate-300 hover:text-white"}`,
 									title: "Auto Features Menu (Auto Mic, Auto Listen, Auto Reply, Auto TTS)",
 									children: [
 										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, {
-											size: 14,
+											size: 13,
 											className: isJarvis ? "text-cyan-400" : "text-pink-400"
 										}),
 										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-											className: "text-[11px] font-semibold hidden sm:inline",
-											children: "Auto Features"
+											className: "text-[10px] font-semibold hidden sm:inline",
+											children: "Auto"
 										}),
 										autoFeatures?.autoListen && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" })
 									]
@@ -19880,22 +19833,22 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 									type: "button",
 									onClick: onOpenStudio || onOpenVoiceSettings,
-									className: `h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${isJarvis ? "border-cyan-500/25 hover:border-cyan-400 text-cyan-200" : "border-pink-500/25 hover:border-pink-400 text-pink-200"}`,
+									className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${isJarvis ? "border-cyan-500/25 hover:border-cyan-400 text-cyan-200" : "border-pink-500/25 hover:border-pink-400 text-pink-200"}`,
 									title: "AI Core Studio & Customizer",
 									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Palette, {
-										size: 14,
+										size: 13,
 										className: isJarvis ? "text-cyan-400" : "text-pink-400"
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-[11px] font-semibold hidden sm:inline",
+										className: "text-[10px] font-semibold hidden sm:inline",
 										children: "Studio"
 									})]
 								}),
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									type: "button",
 									onClick: onOpenProfile || onOpenDrawer,
-									className: `w-9 h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md ${isJarvis ? "hover:border-cyan-400/40 text-cyan-300" : "hover:border-pink-400/40 text-pink-300"}`,
+									className: `w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md ${isJarvis ? "hover:border-cyan-400/40 text-cyan-300" : "hover:border-pink-400/40 text-pink-300"}`,
 									title: "User Profile",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 16 })
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(User, { size: 15 })
 								})
 							]
 						})
@@ -19903,23 +19856,23 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 					className: "flex items-center justify-center",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center p-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg",
+						className: "flex items-center p-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => onSwitchCompanion("alya"),
-							className: `flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_14px_rgba(255,38,159,0.55)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_12px_rgba(255,38,159,0.5)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "🌸" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya" })]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => onSwitchCompanion("jarvis"),
-							className: `flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${isJarvis ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_14px_rgba(0,229,255,0.55)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${isJarvis ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(0,229,255,0.5)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Jarvis" })]
 						})]
 					})
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "relative z-10 flex-1 min-h-0 w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 my-auto",
+				className: "relative z-10 flex-1 min-h-[140px] w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 overflow-hidden my-0.5",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HolographicAvatar, {
 					character,
 					expression,
@@ -19933,21 +19886,21 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 					particleStyle: activeParticle,
 					showPedestal: true,
 					userName,
-					className: "w-full"
+					className: "w-full h-full"
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 mb-2 z-20 shrink-0",
+				className: "w-full max-w-3xl lg:max-w-4xl mx-auto px-2.5 sm:px-6 mb-1.5 z-20 shrink-0",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: `relative rounded-2xl border backdrop-blur-2xl p-2.5 sm:p-3 shadow-2xl transition-all duration-300 overflow-hidden ${isJarvis ? "bg-gradient-to-b from-[#081326]/85 via-[#040b17]/90 to-[#02050c]/95 border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_20px_rgba(0,229,255,0.14),inset_0_1px_1px_rgba(255,255,255,0.12)]" : "bg-gradient-to-b from-[#140827]/85 via-[#0c0419]/90 to-[#070210]/95 border-pink-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_22px_rgba(255,38,159,0.16),inset_0_1px_1px_rgba(255,255,255,0.12)]"}`,
+					className: `relative rounded-2xl border backdrop-blur-xl p-2 sm:p-2.5 shadow-xl transition-all duration-300 overflow-hidden ${isJarvis ? "bg-gradient-to-b from-[#081326]/85 via-[#040b17]/90 to-[#02050c]/95 border-cyan-500/30 shadow-[0_6px_24px_rgba(0,0,0,0.75),0_0_16px_rgba(0,229,255,0.12),inset_0_1px_1px_rgba(255,255,255,0.12)]" : "bg-gradient-to-b from-[#140827]/85 via-[#0c0419]/90 to-[#070210]/95 border-pink-500/30 shadow-[0_6px_24px_rgba(0,0,0,0.75),0_0_18px_rgba(255,38,159,0.14),inset_0_1px_1px_rgba(255,255,255,0.12)]"}`,
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute top-0 inset-x-8 sm:inset-x-16 h-[1px] pointer-events-none ${isJarvis ? "bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" : "bg-gradient-to-r from-transparent via-pink-400/60 to-transparent"}` }),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center justify-between pb-1.5 border-b border-white/[0.08] mb-1.5 text-[10px]",
+							className: "flex items-center justify-between pb-1 border-b border-white/[0.08] mb-1 text-[10px]",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center gap-1.5 font-semibold text-slate-300",
 								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-2 h-2 rounded-full ${isListening ? "bg-rose-400 animate-ping" : isThinking ? "bg-amber-400 animate-pulse" : isJarvis ? "bg-cyan-400 shadow-[0_0_6px_rgba(0,229,255,0.8)]" : "bg-pink-400 shadow-[0_0_6px_rgba(255,38,159,0.8)]"}` }),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-1.5 h-1.5 rounded-full ${isListening ? "bg-rose-400 animate-ping" : isThinking ? "bg-amber-400 animate-pulse" : isJarvis ? "bg-cyan-400 shadow-[0_0_6px_rgba(0,229,255,0.8)]" : "bg-pink-400 shadow-[0_0_6px_rgba(255,38,159,0.8)]"}` }),
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 										className: `font-bold ${isJarvis ? "text-cyan-300" : "text-pink-300"}`,
 										children: isJarvis ? "⚡ Jarvis Live HUD" : "🌸 Alya Live Stream"
@@ -19957,14 +19910,14 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 										children: "// SYS.STREAM"
 									}),
 									autoFeatures?.autoListen && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35 shadow-[0_0_8px_rgba(16,185,129,0.2)]",
+										className: "text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/35",
 										children: "Hands-Free"
 									})
 								]
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
 								onClick: onOpenChat,
-								className: `flex items-center gap-1 px-2 py-0.5 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer group text-[10px] font-medium border border-white/5 ${isJarvis ? "hover:border-cyan-400/40 hover:bg-cyan-950/40 hover:shadow-[0_0_10px_rgba(0,229,255,0.2)]" : "hover:border-pink-400/40 hover:bg-pink-950/40 hover:shadow-[0_0_10px_rgba(255,38,159,0.2)]"}`,
+								className: `flex items-center gap-1 px-2 py-0.5 rounded-lg text-slate-300 hover:text-white transition-all cursor-pointer group text-[10px] font-medium border border-white/5 ${isJarvis ? "hover:border-cyan-400/40 hover:bg-cyan-950/40" : "hover:border-pink-400/40 hover:bg-pink-950/40"}`,
 								title: "Open Full Chat Screen",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Full Chat" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronRight, {
 									size: 11,
@@ -19974,10 +19927,10 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							ref: chatScrollRef,
-							className: "max-h-[78px] sm:max-h-[92px] overflow-y-auto space-y-1.5 pr-1 cursor-pointer",
+							className: "max-h-[64px] sm:max-h-[84px] overflow-y-auto space-y-1 pr-1 cursor-pointer",
 							onClick: onOpenChat,
 							children: [recentMessages.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center justify-center gap-1.5 py-2.5 text-xs text-slate-400 font-quicksand",
+								className: "flex items-center justify-center gap-1.5 py-2 text-xs text-slate-400 font-quicksand",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Sparkles, {
 									size: 13,
 									className: isJarvis ? "text-cyan-400" : "text-pink-400"
@@ -19987,7 +19940,7 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 								return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 									className: `flex flex-col ${isUser ? "items-end" : "items-start"} text-xs`,
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										className: `px-3 py-1.5 rounded-xl max-w-[92%] leading-relaxed transition-all shadow-sm ${msg.isError ? "bg-rose-950/70 text-rose-200 border border-rose-500/40" : isUser ? isJarvis ? "bg-gradient-to-r from-cyan-950/70 to-blue-950/70 text-cyan-100 border border-cyan-500/35 shadow-[0_2px_10px_rgba(0,229,255,0.15)]" : "bg-gradient-to-r from-pink-950/70 to-purple-950/70 text-pink-100 border border-pink-500/35 shadow-[0_2px_10px_rgba(255,38,159,0.15)]" : "bg-white/[0.08] text-slate-100 border border-white/10 hover:border-white/20"}`,
+										className: `px-2.5 py-1 rounded-xl max-w-[92%] leading-snug transition-all shadow-sm ${msg.isError ? "bg-rose-950/70 text-rose-200 border border-rose-500/40" : isUser ? isJarvis ? "bg-gradient-to-r from-cyan-950/70 to-blue-950/70 text-cyan-100 border border-cyan-500/35" : "bg-gradient-to-r from-pink-950/70 to-purple-950/70 text-pink-100 border border-pink-500/35" : "bg-white/[0.08] text-slate-100 border border-white/10 hover:border-white/20"}`,
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 											className: "flex items-center justify-between gap-1 mb-0.5 text-[9px] font-bold opacity-80",
 											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -20005,19 +19958,19 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 													e.stopPropagation();
 													onSpeakMessage(msg.text);
 												},
-												className: "p-0.5 text-slate-400 hover:text-white hover:text-pink-300 transition-colors cursor-pointer",
+												className: "p-0.5 text-slate-400 hover:text-pink-300 transition-colors cursor-pointer",
 												title: "Listen / Replay speech",
 												children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Volume2, { size: 11 })
 											})]
 										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-											className: "line-clamp-3 text-[11px] break-words",
+											className: "line-clamp-2 text-[11px] break-words",
 											children: msg.text
 										})]
 									})
 								}, msg.id);
 							}), isThinking && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center gap-2 text-[11px] text-slate-300 italic py-1 px-1",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-2 h-2 rounded-full animate-bounce ${isJarvis ? "bg-cyan-400 shadow-[0_0_8px_rgba(0,229,255,0.8)]" : "bg-pink-400 shadow-[0_0_8px_rgba(255,38,159,0.8)]"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+								className: "flex items-center gap-2 text-[11px] text-slate-300 italic py-0.5 px-1",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-1.5 h-1.5 rounded-full animate-bounce ${isJarvis ? "bg-cyan-400 shadow-[0_0_8px_rgba(0,229,255,0.8)]" : "bg-pink-400 shadow-[0_0_8px_rgba(255,38,159,0.8)]"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 									className: isJarvis ? "text-cyan-200" : "text-pink-200",
 									children: isJarvis ? "Jarvis is formulating response..." : "Alya is thinking..."
 								})]
@@ -20027,32 +19980,32 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 pb-[max(0.75rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))] pt-0 flex flex-col gap-2 shrink-0",
+				className: "relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-2.5 sm:px-6 pb-[max(0.45rem,calc(env(safe-area-inset-bottom,0px)+0.35rem))] pt-0 flex flex-col gap-1.5 shrink-0",
 				children: [
 					isListening && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: `p-2.5 rounded-2xl border flex items-center justify-between shadow-2xl animate-fadeIn backdrop-blur-2xl ${isJarvis ? "bg-gradient-to-r from-cyan-950/95 via-[#08182d]/95 to-cyan-950/95 border-cyan-400 text-cyan-200 shadow-[0_0_24px_rgba(0,229,255,0.35)]" : "bg-gradient-to-r from-pink-950/95 via-[#230922]/95 to-pink-950/95 border-pink-400 text-pink-200 shadow-[0_0_24px_rgba(255,38,159,0.35)]"}`,
+						className: `p-2 rounded-2xl border flex items-center justify-between shadow-xl animate-fadeIn backdrop-blur-xl ${isJarvis ? "bg-gradient-to-r from-cyan-950/95 via-[#08182d]/95 to-cyan-950/95 border-cyan-400 text-cyan-200" : "bg-gradient-to-r from-pink-950/95 via-[#230922]/95 to-pink-950/95 border-pink-400 text-pink-200"}`,
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-2.5 flex-1 truncate mr-2",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping flex-shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex items-center gap-2 flex-1 truncate mr-2",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2 h-2 rounded-full bg-rose-500 animate-ping flex-shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "truncate",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-									className: "text-[10px] font-black uppercase tracking-wider text-rose-300",
-									children: isAutoVoiceActive ? "Auto Voice: Listening (Speak naturally)..." : "Listening to your voice..."
+									className: "text-[9px] font-black uppercase tracking-wider text-rose-300",
+									children: isAutoVoiceActive ? "Auto Voice: Listening..." : "Listening to your voice..."
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-									className: "text-xs truncate font-medium text-white",
+									className: "text-[11px] truncate font-medium text-white",
 									children: lastVoiceTranscript || "Speak naturally now..."
 								})]
 							})]
 						}), onCancelVoice && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							type: "button",
 							onClick: onCancelVoice,
-							className: "w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white flex-shrink-0 cursor-pointer active:scale-95",
+							className: "w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white flex-shrink-0 cursor-pointer active:scale-95",
 							title: "Cancel Voice Input",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 14 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 13 })
 						})]
 					}),
 					micErrorMessage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-amber-950/85 border border-amber-500/40 text-amber-200 backdrop-blur-xl gap-2 shadow-lg",
+						className: "flex items-center justify-between text-xs px-3 py-1.5 rounded-xl bg-amber-950/85 border border-amber-500/40 text-amber-200 backdrop-blur-xl gap-2 shadow-lg",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "text-[11px] leading-snug break-words flex-1",
 							children: micErrorMessage
@@ -20061,7 +20014,7 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onToggleVoice,
-								className: "text-[11px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-2 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors",
+								className: "text-[10px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-2 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors",
 								children: "Retry"
 							}), onClearMicError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
@@ -20072,22 +20025,22 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 						})]
 					}),
 					selectedImage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-2 p-1.5 px-3 rounded-2xl bg-[#120824]/90 border border-pink-500/30 backdrop-blur-xl w-fit shadow-lg animate-fadeIn",
+						className: "flex items-center gap-2 p-1 px-2.5 rounded-xl bg-[#120824]/90 border border-pink-500/30 backdrop-blur-xl w-fit shadow-lg animate-fadeIn",
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 								src: selectedImage,
 								alt: "Attachment",
-								className: "w-8 h-8 rounded-lg object-cover border border-white/20"
+								className: "w-7 h-7 rounded-lg object-cover border border-white/20"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[11px] font-medium text-pink-200",
+								className: "text-[10px] font-medium text-pink-200",
 								children: "Image attached"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: () => setSelectedImage(null),
 								className: "w-5 h-5 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-slate-300 hover:text-white cursor-pointer",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 12 })
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 11 })
 							})
 						]
 					}),
@@ -20108,7 +20061,7 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
 						onSubmit: handleSend,
-						className: `relative w-full max-w-xl mx-auto rounded-full p-1.5 pl-4 flex items-center gap-2 border backdrop-blur-2xl shadow-2xl transition-all duration-300 focus-within:ring-2 ${isJarvis ? "bg-gradient-to-r from-[#081326]/90 via-[#040b17]/95 to-[#081326]/90 border-cyan-500/35 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_22px_rgba(0,229,255,0.18)]" : "bg-gradient-to-r from-[#140827]/90 via-[#0c0419]/95 to-[#140827]/90 border-pink-500/35 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_8px_32px_rgba(0,0,0,0.8),0_0_24px_rgba(255,38,159,0.2)]"}`,
+						className: `relative w-full max-w-xl mx-auto rounded-full p-1 pl-3.5 flex items-center gap-1.5 border backdrop-blur-xl shadow-xl transition-all duration-300 focus-within:ring-2 ${isJarvis ? "bg-gradient-to-r from-[#081326]/90 via-[#040b17]/95 to-[#081326]/90 border-cyan-500/35 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_6px_24px_rgba(0,0,0,0.75),0_0_16px_rgba(0,229,255,0.15)]" : "bg-gradient-to-r from-[#140827]/90 via-[#0c0419]/95 to-[#140827]/90 border-pink-500/35 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_6px_24px_rgba(0,0,0,0.75),0_0_18px_rgba(255,38,159,0.16)]"}`,
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute top-0 inset-x-8 h-[1px] pointer-events-none ${isJarvis ? "bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" : "bg-gradient-to-r from-transparent via-pink-400/40 to-transparent"}` }),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
@@ -20117,23 +20070,23 @@ var HomeScreen = ({ character, onSwitchCompanion, expression, isSpeaking, isList
 								value: inputText,
 								onChange: (e) => setInputText(e.target.value),
 								placeholder: `Message ${isJarvis ? "Jarvis" : "Alya"}...`,
-								className: "flex-1 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none py-1.5 selection:bg-pink-500 selection:text-white"
+								className: "flex-1 min-w-0 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none py-1 selection:bg-pink-500 selection:text-white"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center gap-1.5 pr-1",
+								className: "flex items-center gap-1 pr-0.5 shrink-0",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									type: "button",
 									onClick: () => fileInputRef.current?.click(),
-									className: `w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isJarvis ? "text-cyan-300/80 hover:text-white hover:bg-cyan-500/20" : "text-pink-300/80 hover:text-white hover:bg-pink-500/20"}`,
+									className: `w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all cursor-pointer ${isJarvis ? "text-cyan-300/80 hover:text-white hover:bg-cyan-500/20" : "text-pink-300/80 hover:text-white hover:bg-pink-500/20"}`,
 									title: "Attach Image",
 									"aria-label": "Attach Image",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, { size: 16 })
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Image$1, { size: 15 })
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									type: "submit",
 									disabled: !inputText.trim() && !selectedImage,
 									"aria-label": "Send message",
-									className: `w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white font-bold shadow-[0_0_18px_rgba(0,229,255,0.7)] active:scale-95 cursor-pointer hover:shadow-[0_0_24px_rgba(0,229,255,0.9)]" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white font-bold shadow-[0_0_18px_rgba(255,38,159,0.7)] active:scale-95 cursor-pointer hover:shadow-[0_0_24px_rgba(255,38,159,0.9)]" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 15 })
+									className: `w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white font-bold shadow-[0_0_14px_rgba(0,229,255,0.65)] active:scale-95 cursor-pointer" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white font-bold shadow-[0_0_14px_rgba(255,38,159,0.65)] active:scale-95 cursor-pointer" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 14 })
 								})]
 							})
 						]
@@ -20205,11 +20158,11 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 		className: "w-full h-full flex flex-col justify-between overflow-hidden bg-black/40 backdrop-blur-md",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "px-4 py-2 border-b border-white/10 flex items-center justify-between glass-panel-subtle z-10",
+				className: "px-3 sm:px-4 py-1.5 border-b border-white/10 flex items-center justify-between glass-panel-subtle z-10 shrink-0",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 					className: "flex items-center gap-2",
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: `w-8 h-8 rounded-full p-[1.5px] ${isJarvis ? "bg-gradient-to-tr from-amber-500 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" : "bg-gradient-to-tr from-pink-500 to-purple-500 shadow-[0_0_8px_rgba(244,114,182,0.4)]"}`,
+						className: `w-7 h-7 sm:w-8 sm:h-8 rounded-full p-[1.5px] ${isJarvis ? "bg-gradient-to-tr from-amber-500 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" : "bg-gradient-to-tr from-pink-500 to-purple-500 shadow-[0_0_8px_rgba(244,114,182,0.4)]"}`,
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 							className: "w-full h-full rounded-full bg-[#1b1427] flex items-center justify-center",
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
@@ -20220,36 +20173,36 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "flex items-center gap-1",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-							className: "text-sm font-bold text-white",
+							className: "text-xs sm:text-sm font-bold text-white",
 							children: isJarvis ? "Jarvis" : "Alya"
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: `text-xs ${isJarvis ? "text-amber-400" : "text-pink-400"}`,
 							children: isJarvis ? "⚡" : "🌸"
 						})]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-						className: "text-[10px] text-emerald-400 flex items-center gap-1",
+						className: "text-[9px] sm:text-[10px] text-emerald-400 flex items-center gap-1 leading-tight",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" }), "Live AI Connected"]
 					})] })]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-1.5",
+					className: "flex items-center gap-1",
 					children: [
 						isSpeaking && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							onClick: onStopSpeaking,
-							className: "px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500 text-rose-300 text-xs font-semibold flex items-center gap-1 shadow-sm animate-pulse hover:bg-rose-500/30 active:scale-95 transition-all",
+							className: "px-2 py-1 rounded-full bg-rose-500/20 border border-rose-500 text-rose-300 text-[11px] font-semibold flex items-center gap-1 shadow-sm animate-pulse hover:bg-rose-500/30 active:scale-95 transition-all",
 							title: "Stop audio playback",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(VolumeX, { size: 13 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Stop" })]
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(VolumeX, { size: 12 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Stop" })]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							onClick: onStartVoiceCall,
-							className: `w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center active:scale-95 transition-all ${isJarvis ? "text-amber-300 hover:bg-amber-500/20" : "text-pink-300 hover:bg-pink-500/20"}`,
+							className: `w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center active:scale-95 transition-all ${isJarvis ? "text-amber-300 hover:bg-amber-500/20" : "text-pink-300 hover:bg-pink-500/20"}`,
 							title: "Start voice call",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Phone, { size: 15 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Phone, { size: 14 })
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							onClick: onRetryLastMessage,
-							className: "w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 hover:text-white hover:bg-purple-500/20 active:scale-95 transition-all",
+							className: "w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 hover:text-white hover:bg-purple-500/20 active:scale-95 transition-all",
 							title: "Retry last response",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCw, { size: 14 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RotateCw, { size: 13 })
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							onClick: () => {
@@ -20257,15 +20210,15 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 								setSupportReason("");
 								setSupportConsent(false);
 							},
-							className: "w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-purple-300 hover:bg-purple-500/20 active:scale-95 transition-all",
+							className: "w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-purple-300 hover:bg-purple-500/20 active:scale-95 transition-all",
 							title: "Submit conversation to support for review",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LifeBuoy, { size: 14 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LifeBuoy, { size: 13 })
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							onClick: () => setShowClearConfirm(true),
-							className: "w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all",
+							className: "w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all",
 							title: "Clear conversation",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 14 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Trash2, { size: 13 })
 						})
 					]
 				})]
@@ -20440,7 +20393,7 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "flex-1 overflow-y-auto px-4 py-4 space-y-4",
+				className: "flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 space-y-3",
 				children: [
 					(messages || []).map((msg) => {
 						const isCompanion = msg.role === "alya" || msg.role === "jarvis" || msg.role === "companion";
@@ -20595,7 +20548,7 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
 				onSubmit: handleSubmit,
-				className: "p-3 border-t border-white/10 glass-panel flex items-center gap-2 z-10",
+				className: "p-2.5 sm:p-3 pb-[max(0.6rem,calc(env(safe-area-inset-bottom,0px)+0.4rem))] border-t border-white/10 glass-panel flex items-center gap-2 z-10 shrink-0",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
 						ref: fileInputRef,
@@ -20607,30 +20560,30 @@ var ChatScreen = ({ messages, isThinking, isStreaming, isListening, isSpeaking =
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 						type: "button",
 						onClick: () => fileInputRef.current?.click(),
-						className: `w-9 h-9 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 transition-colors ${isJarvis ? "hover:text-amber-300 hover:bg-amber-500/20" : "hover:text-pink-300 hover:bg-pink-500/20"}`,
+						className: `w-8 h-8 sm:w-9 sm:h-9 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 transition-colors shrink-0 ${isJarvis ? "hover:text-amber-300 hover:bg-amber-500/20" : "hover:text-pink-300 hover:bg-pink-500/20"}`,
 						title: "Attach image",
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Paperclip, { size: 16 })
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Paperclip, { size: 15 })
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 						type: "button",
 						onClick: onToggleVoice,
 						disabled: recognitionState === "starting" || recognitionState === "stopping",
-						className: `w-9 h-9 rounded-full flex items-center justify-center transition-all ${recognitionState === "starting" || recognitionState === "stopping" ? "opacity-60 cursor-wait" : isListening ? "bg-rose-500 text-white shadow-[0_0_12px_#f43f5e] animate-pulse" : isJarvis ? "glass-panel-subtle text-slate-300 hover:text-amber-300" : "glass-panel-subtle text-slate-300 hover:text-pink-300"}`,
+						className: `w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${recognitionState === "starting" || recognitionState === "stopping" ? "opacity-60 cursor-wait" : isListening ? "bg-rose-500 text-white shadow-[0_0_12px_#f43f5e] animate-pulse" : isJarvis ? "glass-panel-subtle text-slate-300 hover:text-amber-300" : "glass-panel-subtle text-slate-300 hover:text-pink-300"}`,
 						title: isListening ? "Stop listening" : "Voice input",
-						children: isListening ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MicOff, { size: 16 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, { size: 16 })
+						children: isListening ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MicOff, { size: 15 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, { size: 15 })
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
 						type: "text",
 						value: inputText,
 						onChange: (e) => setInputText(e.target.value),
 						placeholder: `Message ${isJarvis ? "Jarvis" : "Alya"}...`,
-						className: `flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-slate-100 placeholder:text-slate-400/80 focus:outline-none font-quicksand ${isJarvis ? "focus:border-amber-500/50" : "focus:border-pink-500/50"}`
+						className: `flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-100 placeholder:text-slate-400/80 focus:outline-none font-quicksand ${isJarvis ? "focus:border-amber-500/50" : "focus:border-pink-500/50"}`
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 						type: "submit",
 						disabled: !inputText.trim() && !selectedImage,
-						className: `w-9 h-9 rounded-full flex items-center justify-center transition-all ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-tr from-amber-600 to-yellow-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.6)] active:scale-95" : "bg-gradient-to-tr from-pink-600 to-rose-500 text-white shadow-[0_0_15px_rgba(244,114,182,0.6)] active:scale-95" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
-						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 15 })
+						className: `w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-tr from-amber-600 to-yellow-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.6)] active:scale-95" : "bg-gradient-to-tr from-pink-600 to-rose-500 text-white shadow-[0_0_15px_rgba(244,114,182,0.6)] active:scale-95" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 14 })
 					})
 				]
 			})
@@ -20684,40 +20637,40 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 				className: "hidden"
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 pt-3 pb-1 flex flex-col gap-2",
+				className: "relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-3 sm:px-6 pt-2 pb-1 flex flex-col gap-1.5 shrink-0",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "w-full flex items-center justify-between",
+					className: "w-full flex items-center justify-between gap-1",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							type: "button",
 							onClick: onEndCall,
-							className: "w-10 h-10 rounded-2xl bg-black/40 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
+							className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
 							title: "End Call and return to Home",
-							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { size: 20 })
+							children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ChevronLeft, { size: 18 })
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "text-center flex flex-col items-center",
+							className: "text-center flex flex-col items-center min-w-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
-								className: `text-lg sm:text-xl font-bold tracking-wide font-comfortaa flex items-center gap-1.5 ${isJarvis ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-blue-400 drop-shadow-[0_0_12px_rgba(0,229,255,0.4)]" : "text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-purple-300 drop-shadow-[0_0_12px_rgba(255,38,159,0.4)]"}`,
+								className: `text-base sm:text-lg font-bold tracking-wide font-comfortaa flex items-center gap-1.5 ${isJarvis ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-blue-400 drop-shadow-[0_0_12px_rgba(0,229,255,0.4)]" : "text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-purple-300 drop-shadow-[0_0_12px_rgba(255,38,159,0.4)]"}`,
 								children: isJarvis ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡ Jarvis Voice" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya Voice 🌸" })
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex items-center gap-1.5 mt-0.5",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-2 h-2 rounded-full ${isListening ? "bg-rose-400 animate-ping" : isThinking ? "bg-cyan-400 animate-pulse" : isSpeaking ? "bg-emerald-400 animate-ping" : "bg-emerald-400"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-									className: "text-[10px] text-slate-300 tracking-wider font-medium",
+								className: "flex items-center gap-1.5",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `w-1.5 h-1.5 rounded-full ${isListening ? "bg-rose-400 animate-ping" : isThinking ? "bg-cyan-400 animate-pulse" : isSpeaking ? "bg-emerald-400 animate-ping" : "bg-emerald-400"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "text-[9px] sm:text-[10px] text-slate-300 tracking-wider font-medium leading-tight",
 									children: isListening ? "Listening to you..." : isThinking ? "Thinking / Processing..." : isSpeaking ? "Speaking response..." : autoFeatures?.autoListen ? "Hands-Free Loop Active" : "Voice Call Connected"
 								})]
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-1.5",
+							className: "flex items-center gap-1",
 							children: [
 								onOpenAutoFeatures && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 									type: "button",
 									onClick: onOpenAutoFeatures,
-									className: `h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${autoFeatures?.autoListen ? isJarvis ? "border-cyan-400 text-cyan-300" : "border-pink-400 text-pink-300" : "border-white/10 text-slate-400"}`,
+									className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${autoFeatures?.autoListen ? isJarvis ? "border-cyan-400 text-cyan-300" : "border-pink-400 text-pink-300" : "border-white/10 text-slate-400"}`,
 									title: "Auto Features Menu",
 									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, {
-										size: 14,
+										size: 13,
 										className: isJarvis ? "text-cyan-400" : "text-pink-400"
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 										className: "text-[10px] font-bold hidden sm:inline",
@@ -20727,19 +20680,19 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									type: "button",
 									onClick: () => setShowVoiceStudio((prev) => !prev),
-									className: `h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${showVoiceStudio ? isJarvis ? "border-cyan-400 bg-cyan-950/60 text-cyan-200" : "border-pink-400 bg-pink-950/60 text-pink-200" : isJarvis ? "border-cyan-500/25 hover:border-cyan-400 text-cyan-200" : "border-pink-500/25 hover:border-pink-400 text-pink-200"}`,
+									className: `h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${showVoiceStudio ? isJarvis ? "border-cyan-400 bg-cyan-950/60 text-cyan-200" : "border-pink-400 bg-pink-950/60 text-pink-200" : isJarvis ? "border-cyan-500/25 hover:border-cyan-400 text-cyan-200" : "border-pink-500/25 hover:border-pink-400 text-pink-200"}`,
 									title: "Voice Profile Tuning",
 									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "text-[11px] font-semibold",
+										className: "text-[10px] font-semibold",
 										children: "Tuning"
 									})
 								}),
 								onOpenChat && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 									type: "button",
 									onClick: onOpenChat,
-									className: "w-9 h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
+									className: "w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
 									title: "Full Chat History",
-									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MessageSquare, { size: 16 })
+									children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MessageSquare, { size: 15 })
 								})
 							]
 						})
@@ -20747,23 +20700,23 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 				}), onSwitchCompanion && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 					className: "flex items-center justify-center",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center p-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg",
+						className: "flex items-center p-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => onSwitchCompanion("alya"),
-							className: `flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_14px_rgba(255,38,159,0.55)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_12px_rgba(255,38,159,0.5)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "🌸" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya" })]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => onSwitchCompanion("jarvis"),
-							className: `flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${isJarvis ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_14px_rgba(0,229,255,0.55)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${isJarvis ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(0,229,255,0.5)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Jarvis" })]
 						})]
 					})
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-10 flex-1 min-h-0 w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 my-auto",
+				className: "relative z-10 flex-1 min-h-[140px] w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 overflow-hidden my-0.5",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(HolographicAvatar, {
 					character,
 					expression,
@@ -20777,9 +20730,9 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 					particleStyle: activeParticle,
 					showPedestal: true,
 					userName,
-					className: "w-full"
+					className: "w-full h-full"
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "w-56 -mt-1 flex justify-center",
+					className: "w-48 -mt-1 flex justify-center shrink-0",
 					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(LiveAudioWave, {
 						active: isListening || isSpeaking,
 						type: "bars",
@@ -20788,13 +20741,13 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-				className: "w-full max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-8 mb-2 z-20",
+				className: "w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 mb-1.5 z-20 shrink-0",
 				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: `rounded-2xl border backdrop-blur-xl p-3 shadow-xl transition-all ${isJarvis ? "bg-black/35 border-cyan-500/25 shadow-[0_4px_24px_rgba(0,229,255,0.08)]" : "bg-black/35 border-pink-500/25 shadow-[0_4px_24px_rgba(255,38,159,0.08)]"}`,
+					className: `rounded-2xl border backdrop-blur-xl p-2.5 shadow-xl transition-all ${isJarvis ? "bg-black/40 border-cyan-500/25 shadow-[0_4px_20px_rgba(0,229,255,0.08)]" : "bg-black/40 border-pink-500/25 shadow-[0_4px_20px_rgba(255,38,159,0.08)]"}`,
 					children: [
 						isListening && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 								className: "text-xs text-rose-200 font-medium truncate",
 								children: [
 									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
@@ -20809,7 +20762,7 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 						}),
 						isThinking && !isListening && !isSpeaking && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 								className: "text-xs text-cyan-200 font-medium italic",
 								children: isJarvis ? "Jarvis is formulating response..." : "Alya is thinking..."
 							})]
@@ -20820,7 +20773,7 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 								size: 14,
 								className: `mt-0.5 shrink-0 ${isJarvis ? "text-cyan-400" : "text-pink-400"}`
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-								className: `text-xs font-semibold leading-relaxed line-clamp-3 ${isJarvis ? "text-cyan-100" : "text-pink-100"}`,
+								className: `text-xs font-semibold leading-snug line-clamp-2 ${isJarvis ? "text-cyan-100" : "text-pink-100"}`,
 								children: [
 									"\"",
 									alyaVoiceReply || "Speaking response...",
@@ -20829,17 +20782,17 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 							})]
 						}),
 						!isListening && !isSpeaking && !isThinking && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							className: "text-center py-0.5 text-xs text-slate-300 font-quicksand",
+							className: "text-center py-0.5 text-[11px] text-slate-300 font-quicksand",
 							children: isAutoVoiceActive ? `Hands-free active. ${isJarvis ? "Jarvis" : "Alya"} will automatically listen after replying.` : `${isJarvis ? "Jarvis" : "Alya"} is ready. Tap center mic for Auto Voice, or use Hold-to-Talk.`
 						})
 					]
 				})
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-8 pb-3 pt-0 flex flex-col gap-2.5",
+				className: "relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)+0.35rem))] pt-0 flex flex-col gap-2 shrink-0",
 				children: [
 					micErrorMessage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-amber-950/80 border border-amber-500/35 text-amber-200 backdrop-blur-md gap-2",
+						className: "flex items-center justify-between text-xs px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/35 text-amber-200 backdrop-blur-md gap-2",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 							className: "text-[11px] leading-snug break-words flex-1",
 							children: micErrorMessage
@@ -20848,7 +20801,7 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onToggleListening,
-								className: "text-[11px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors",
+								className: "text-[10px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors",
 								children: "Retry"
 							}), onClearMicError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
@@ -20859,27 +20812,27 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 						})]
 					}),
 					selectedImage && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-2 p-1.5 px-3 rounded-xl bg-black/60 border border-white/15 w-fit",
+						className: "flex items-center gap-2 p-1 px-2.5 rounded-xl bg-black/60 border border-white/15 w-fit",
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
 								src: selectedImage,
 								alt: "Attachment",
-								className: "w-8 h-8 rounded-lg object-cover"
+								className: "w-7 h-7 rounded-lg object-cover"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "text-[11px] text-slate-300",
+								className: "text-[10px] text-slate-300",
 								children: "Image attached for call"
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: () => setSelectedImage(null),
 								className: "w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 12 })
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { size: 11 })
 							})
 						]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "w-full flex items-center justify-between px-2",
+						className: "w-full flex items-center justify-between px-1",
 						children: [
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
@@ -20894,7 +20847,7 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 								onPointerCancel: () => onHoldToTalkEnd?.(),
 								onPointerLeave: () => onHoldToTalkEnd?.(),
 								onContextMenu: (e) => e.preventDefault(),
-								className: `h-10 px-2.5 rounded-2xl bg-black/50 border backdrop-blur-md flex items-center gap-1.5 transition-all select-none cursor-pointer active:scale-95 shadow-md ${isJarvis ? "border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:bg-cyan-950/40" : "border-pink-500/30 hover:border-pink-400 text-pink-300 hover:bg-pink-950/40"}`,
+								className: `h-9 sm:h-10 px-2.5 rounded-xl bg-black/50 border backdrop-blur-md flex items-center gap-1.5 transition-all select-none cursor-pointer active:scale-95 shadow-md ${isJarvis ? "border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:bg-cyan-950/40" : "border-pink-500/30 hover:border-pink-400 text-pink-300 hover:bg-pink-950/40"}`,
 								title: "Press and HOLD to talk, release to send immediately",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, {
 									size: 14,
@@ -20908,45 +20861,45 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 								type: "button",
 								onClick: onStopSpeaking,
 								disabled: !isSpeaking,
-								className: `w-10 h-10 rounded-2xl bg-black/45 border backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md ${isSpeaking ? "border-rose-500/50 text-rose-300 hover:bg-rose-950/40" : "border-white/10 text-slate-500 opacity-50 cursor-not-allowed"}`,
+								className: `w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/45 border backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md ${isSpeaking ? "border-rose-500/50 text-rose-300 hover:bg-rose-950/40" : "border-white/10 text-slate-500 opacity-50 cursor-not-allowed"}`,
 								title: "Stop voice output",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, { size: 16 })
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, { size: 15 })
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 								type: "button",
 								onClick: onToggleListening,
 								disabled: recognitionState === "starting" || recognitionState === "stopping",
-								className: `w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-95 cursor-pointer relative group ${recognitionState === "starting" || recognitionState === "stopping" ? "opacity-60 cursor-wait" : isListening ? "bg-rose-500 text-white shadow-[0_0_30px_#f43f5e] animate-pulse ring-4 ring-rose-400/50" : isSpeaking ? "bg-purple-600 text-white shadow-[0_0_25px_#9333ea] ring-4 ring-purple-400/50" : isThinking ? "bg-amber-500 text-white shadow-[0_0_25px_#f59e0b] animate-pulse ring-4 ring-amber-400/50" : isAutoVoiceActive ? "bg-emerald-600 text-white shadow-[0_0_25px_#10b981] ring-4 ring-emerald-400/50 animate-pulse" : isJarvis ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_24px_rgba(0,229,255,0.7)] hover:shadow-[0_0_35px_rgba(0,229,255,0.9)] ring-2 ring-cyan-300/40" : "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_24px_rgba(255,38,159,0.7)] hover:shadow-[0_0_35px_rgba(255,38,159,0.9)] ring-2 ring-pink-300/40"}`,
+								className: `w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-95 cursor-pointer relative group ${recognitionState === "starting" || recognitionState === "stopping" ? "opacity-60 cursor-wait" : isListening ? "bg-rose-500 text-white shadow-[0_0_26px_#f43f5e] animate-pulse ring-4 ring-rose-400/50" : isSpeaking ? "bg-purple-600 text-white shadow-[0_0_22px_#9333ea] ring-4 ring-purple-400/50" : isThinking ? "bg-amber-500 text-white shadow-[0_0_22px_#f59e0b] animate-pulse ring-4 ring-amber-400/50" : isAutoVoiceActive ? "bg-emerald-600 text-white shadow-[0_0_22px_#10b981] ring-4 ring-emerald-400/50 animate-pulse" : isJarvis ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_22px_rgba(0,229,255,0.7)] ring-2 ring-cyan-300/40" : "bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_22px_rgba(255,38,159,0.7)] ring-2 ring-pink-300/40"}`,
 								title: isListening ? "Auto Voice Active (Listening - Tap to turn off)" : isAutoVoiceActive ? "Auto Voice Active (Waiting)" : "Tap to start Auto Voice mode",
-								children: [isListening ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MicOff, { size: 24 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, { size: 24 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `absolute -inset-1 rounded-full opacity-60 animate-ping pointer-events-none ${isListening ? "bg-rose-500" : isAutoVoiceActive ? "bg-emerald-400" : isJarvis ? "bg-cyan-400" : "bg-pink-400"}` })]
+								children: [isListening ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MicOff, { size: 22 }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, { size: 22 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `absolute -inset-1 rounded-full opacity-60 animate-ping pointer-events-none ${isListening ? "bg-rose-500" : isAutoVoiceActive ? "bg-emerald-400" : isJarvis ? "bg-cyan-400" : "bg-pink-400"}` })]
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onOpenChat,
-								className: "w-10 h-10 rounded-2xl bg-black/45 border border-white/10 hover:border-white/30 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
+								className: "w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/45 border border-white/10 hover:border-white/30 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md",
 								title: "Open Full Chat",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MessageSquare, { size: 18 })
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(MessageSquare, { size: 16 })
 							}),
 							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: onEndCall,
-								className: "w-10 h-10 rounded-2xl bg-rose-950/60 border border-rose-500/40 hover:border-rose-400 text-rose-300 hover:text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md",
+								className: "w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-950/60 border border-rose-500/40 hover:border-rose-400 text-rose-300 hover:text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md",
 								title: "End Call and return to Home",
-								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PhoneOff, { size: 18 })
+								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PhoneOff, { size: 16 })
 							})
 						]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
 						onSubmit: handleSend,
-						className: `rounded-full p-1 pl-4 flex items-center gap-2 border backdrop-blur-xl shadow-xl transition-all focus-within:ring-2 ${isJarvis ? "bg-black/55 border-cyan-500/30 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_4px_25px_rgba(0,229,255,0.1)]" : "bg-black/55 border-pink-500/30 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_4px_25px_rgba(255,38,159,0.1)]"}`,
+						className: `rounded-full p-1 pl-3.5 flex items-center gap-1.5 border backdrop-blur-xl shadow-xl transition-all focus-within:ring-2 ${isJarvis ? "bg-black/55 border-cyan-500/30 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_4px_20px_rgba(0,229,255,0.1)]" : "bg-black/55 border-pink-500/30 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_4px_20px_rgba(255,38,159,0.1)]"}`,
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
 							type: "text",
 							value: inputText,
 							onChange: (e) => setInputText(e.target.value),
 							placeholder: `Message or ask ${isJarvis ? "Jarvis" : "Alya"}...`,
-							className: "flex-1 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none"
+							className: "flex-1 min-w-0 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none py-1"
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-1.5 pr-1",
+							className: "flex items-center gap-1 pr-0.5 shrink-0",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: () => fileInputRef.current?.click(),
@@ -20956,7 +20909,7 @@ var VoiceScreen = ({ character, onSwitchCompanion, voices, selectedVoice, onSele
 							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "submit",
 								disabled: !inputText.trim() && !selectedImage,
-								className: `w-9 h-9 rounded-full flex items-center justify-center transition-all ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_16px_rgba(0,229,255,0.6)] active:scale-95" : "bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold shadow-[0_0_16px_rgba(255,38,159,0.6)] active:scale-95" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
+								className: `w-8 h-8 rounded-full flex items-center justify-center transition-all ${inputText.trim() || selectedImage ? isJarvis ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_14px_rgba(0,229,255,0.6)] active:scale-95" : "bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold shadow-[0_0_14px_rgba(255,38,159,0.6)] active:scale-95" : "bg-white/10 text-slate-500 cursor-not-allowed"}`,
 								children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Send, { size: 14 })
 							})]
 						})]
@@ -24184,45 +24137,45 @@ var SplashScreen = ({ currentCompanion, onSelectCompanion, onEnterApp, hasGemini
 	};
 	const isJarvis = selected === "jarvis";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "relative w-full h-full flex flex-col justify-between overflow-hidden bg-[#040207] text-white p-6 select-none",
+		className: "relative w-full h-full flex flex-col justify-between overflow-y-auto bg-[#040207] text-white p-4 sm:p-6 select-none scrollbar-none",
 		children: [
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "absolute inset-0 pointer-events-none",
+				className: "absolute inset-0 pointer-events-none overflow-hidden",
 				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -top-24 -left-20 w-96 h-96 rounded-full blur-[120px] transition-all duration-700 ${isJarvis ? "bg-amber-600/15" : "bg-pink-600/15"}` }),
-					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -bottom-24 -right-20 w-96 h-96 rounded-full blur-[130px] transition-all duration-700 ${isJarvis ? "bg-yellow-600/15" : "bg-purple-600/20"}` }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -top-24 -left-20 w-80 h-80 sm:w-96 sm:h-96 rounded-full blur-[110px] transition-all duration-700 ${isJarvis ? "bg-amber-600/15" : "bg-pink-600/15"}` }),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute -bottom-24 -right-20 w-80 h-80 sm:w-96 sm:h-96 rounded-full blur-[120px] transition-all duration-700 ${isJarvis ? "bg-yellow-600/15" : "bg-purple-600/20"}` }),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:28px_28px]" })
 				]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-10 flex items-center justify-between pt-2",
+				className: "relative z-10 flex items-center justify-between pt-1 shrink-0 gap-2",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-2.5 h-2.5 rounded-full animate-ping ${isJarvis ? "bg-amber-400" : "bg-pink-400"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-						className: "text-xs uppercase tracking-widest text-slate-400 font-mono",
+					className: "flex items-center gap-2 min-w-0",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `w-2 h-2 rounded-full animate-ping shrink-0 ${isJarvis ? "bg-amber-400" : "bg-pink-400"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+						className: "text-[11px] uppercase tracking-widest text-slate-400 font-mono truncate",
 						children: "Alya AI • Neural Core v3.8"
 					})]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-1.5 px-3 py-1 rounded-full glass-panel border border-white/10 text-[11px] text-emerald-400",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, { size: 12 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: hasGeminiKey ? "Gemini 3.8 Flash Active" : "Offline Engine" })]
+					className: "flex items-center gap-1.5 px-2.5 py-1 rounded-full glass-panel border border-white/10 text-[10px] sm:text-[11px] text-emerald-400 shrink-0",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CircleCheck, { size: 11 }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: hasGeminiKey ? "Gemini 3.8 Active" : "Offline Engine" })]
 				})]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-10 flex-1 flex flex-col items-center justify-center my-3",
+				className: "relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center my-2",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						className: "relative flex items-center justify-center mb-4",
+						className: "relative flex items-center justify-center mb-2 w-full max-h-[240px]",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HolographicAvatar, {
 							character: selected,
 							expression: "happy",
-							size: "lg",
+							size: "md",
 							className: "animate-pulse"
 						})
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "text-center space-y-1.5 max-w-sm",
+						className: "text-center space-y-1 max-w-sm px-2",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h1", {
-							className: `text-3xl font-extrabold font-comfortaa tracking-wide drop-shadow-md transition-colors ${isJarvis ? "text-amber-300" : "text-pink-300"}`,
+							className: `text-2xl sm:text-3xl font-extrabold font-comfortaa tracking-wide drop-shadow-md transition-colors ${isJarvis ? "text-amber-300" : "text-pink-300"}`,
 							children: [isJarvis ? "Jarvis" : "Alya", " AI Companion"]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 							className: "text-xs text-slate-300 leading-relaxed font-quicksand",
@@ -24230,30 +24183,30 @@ var SplashScreen = ({ currentCompanion, onSelectCompanion, onEnterApp, hasGemini
 						})]
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "mt-6 w-full max-w-xs grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-black/50 border border-white/10 backdrop-blur-md",
+						className: "mt-4 w-full max-w-xs grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/50 border border-white/10 backdrop-blur-md",
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => handleSelect("alya"),
-							className: `flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl transition-all font-semibold text-xs ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all font-semibold text-xs ${!isJarvis ? "bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-[0_0_15px_rgba(236,72,153,0.4)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "🌸" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Alya (Female)" })]
 						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => handleSelect("jarvis"),
-							className: `flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl transition-all font-semibold text-xs ${isJarvis ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]" : "text-slate-400 hover:text-white"}`,
+							className: `flex items-center justify-center gap-2 py-2 px-3 rounded-xl transition-all font-semibold text-xs ${isJarvis ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.4)]" : "text-slate-400 hover:text-white"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "⚡" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Jarvis (Male)" })]
 						})]
 					})
 				]
 			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "relative z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-2 pb-2",
+				className: "relative z-10 w-full max-w-sm mx-auto flex flex-col items-center gap-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shrink-0",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 					type: "button",
 					onClick: onEnterApp,
-					className: `w-full py-3.5 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all active:scale-95 shadow-xl ${isJarvis ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.35)]" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white shadow-[0_0_25px_rgba(244,114,182,0.35)]"}`,
+					className: `w-full py-3 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl ${isJarvis ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.35)]" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white shadow-[0_0_25px_rgba(244,114,182,0.35)]"}`,
 					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Initialize Companion" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, { size: 17 })]
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-					className: "text-[11px] text-slate-500 font-mono tracking-wider",
+					className: "text-[10px] sm:text-[11px] text-slate-500 font-mono tracking-wider",
 					children: "Voice Engine • Hands-Free Auto • Gemini 3.8 Flash"
 				})]
 			})
@@ -24567,21 +24520,21 @@ var NewOnboardingScreen = ({ initialCompanion = "alya", onFinishOnboarding, onSe
 			className: "relative z-10 w-full max-w-md mx-auto flex-1 flex flex-col justify-center my-3",
 			children: [
 				step === 1 && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "flex flex-col items-center justify-center space-y-5 animate-fadeIn",
+					className: "flex flex-col items-center justify-center space-y-3.5 animate-fadeIn",
 					children: [
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "relative flex items-center justify-center",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute inset-0 rounded-full blur-2xl transition-all duration-700 ${isJarvis ? "bg-amber-500/25 scale-110" : "bg-pink-500/25 scale-110"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HolographicAvatar, {
+							className: "relative flex items-center justify-center w-full max-h-[220px]",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `absolute inset-0 rounded-full blur-2xl transition-all duration-700 ${isJarvis ? "bg-amber-500/20 scale-105" : "bg-pink-500/20 scale-105"}` }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HolographicAvatar, {
 								character: selectedCompanion,
 								expression: isJarvis ? "calm" : "happy",
-								size: "lg",
+								size: "md",
 								className: "transition-transform duration-500 hover:scale-105"
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "text-center space-y-1.5 px-2",
+							className: "text-center space-y-1 px-2",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h1", {
-								className: "text-2xl sm:text-3xl font-bold font-comfortaa tracking-wide text-white",
+								className: "text-xl sm:text-2xl font-bold font-comfortaa tracking-wide text-white",
 								children: ["Welcome to ", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 									className: isJarvis ? "text-amber-300" : "text-pink-400",
 									children: "Alya AI"
@@ -24592,7 +24545,7 @@ var NewOnboardingScreen = ({ initialCompanion = "alya", onFinishOnboarding, onSe
 							})]
 						}),
 						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-3 p-1.5 rounded-2xl bg-white/5 border border-white/10 w-full max-w-xs",
+							className: "flex items-center gap-2.5 p-1 rounded-2xl bg-white/5 border border-white/10 w-full max-w-xs",
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 								type: "button",
 								onClick: () => handleSwitchCompanion("alya"),
@@ -24627,7 +24580,7 @@ var NewOnboardingScreen = ({ initialCompanion = "alya", onFinishOnboarding, onSe
 								setStep(2);
 								playChime("click");
 							},
-							className: `w-full py-3.5 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95 ${isJarvis ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.35)]" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white shadow-[0_0_25px_rgba(244,114,182,0.35)]"}`,
+							className: `w-full py-3 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95 ${isJarvis ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.35)]" : "bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white shadow-[0_0_25px_rgba(244,114,182,0.35)]"}`,
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Get Started" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ArrowRight, { size: 17 })]
 						})
 					]
@@ -41608,6 +41561,13 @@ function App() {
 				onOpenTools: () => setCurrentScreen("phone_control"),
 				onOpenPersonality: () => setShowStudioModal(true),
 				onOpenAutoFeatures: () => setShowAutoFeaturesModal(true),
+				onOpenWorkMode: () => setCurrentScreen("work"),
+				floatingMiniVisible,
+				onToggleFloatingMini: () => {
+					const next = !floatingMiniVisible;
+					setFloatingMiniVisible(next);
+					handleUpdateSettings({ floatingMiniEnabled: next });
+				},
 				autoFeatures,
 				coreCustomization,
 				onSpeakMessage: handleSpeakMessage
@@ -41899,9 +41859,9 @@ function App() {
 	};
 	const showTopBar = currentScreen !== "splash" && currentScreen !== "onboarding" && currentScreen !== "admin" && currentScreen !== "work";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-		className: "relative w-full h-screen overflow-hidden bg-[#030107] text-white flex items-center justify-center select-none",
+		className: "app-viewport relative w-full h-[100dvh] min-h-[100svh] max-h-[100dvh] max-w-[100vw] overflow-hidden bg-[#030107] text-white flex items-center justify-center select-none",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: `relative w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isPhoneFrame ? "max-w-[430px] max-h-[92vh] rounded-[44px] border-[10px] border-[#181822] shadow-[0_25px_60px_rgba(0,0,0,0.85)] ring-1 ring-white/10 my-auto" : "max-w-none h-full"}`,
+			className: `relative w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isPhoneFrame ? "lg:max-w-[430px] lg:max-h-[92dvh] lg:rounded-[44px] lg:border-[10px] lg:border-[#181822] lg:shadow-[0_25px_60px_rgba(0,0,0,0.85)] lg:ring-1 lg:ring-white/10 lg:my-auto" : "max-w-none h-full"}`,
 			children: [
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnimatedCompanionBackground, { character }),
 				settings.dynamicIslandEnabled && currentScreen !== "splash" && currentScreen !== "onboarding" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DynamicIsland, {
@@ -41957,7 +41917,7 @@ function App() {
 					}
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("main", {
-					className: "relative flex-1 w-full h-full overflow-hidden flex flex-col z-10",
+					className: "relative flex-1 min-h-0 w-full h-full overflow-hidden flex flex-col z-10",
 					children: renderCurrentScreen()
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(MenuDrawer, {

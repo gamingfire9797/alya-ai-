@@ -1,9 +1,18 @@
 @import "tailwindcss";
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
   html,
   body {
     width: 100%;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100svh;
     height: 100dvh;
     margin: 0;
     padding: 0;
@@ -13,10 +22,14 @@
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   #root {
     width: 100%;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100svh;
     height: 100dvh;
     overflow: hidden;
     padding-top: env(safe-area-inset-top, 0px);
@@ -26,17 +39,53 @@
   }
 }
 
-.glass-card {
-  background: rgba(15, 7, 28, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+.app-viewport {
+  width: 100%;
+  max-width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
-.no-scrollbar::-webkit-scrollbar {
+.glass-card {
+  background: rgba(15, 7, 28, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.glass-panel {
+  background: rgba(12, 6, 24, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.glass-panel-subtle {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
   display: none;
 }
 
-.no-scrollbar {
+.no-scrollbar,
+.scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

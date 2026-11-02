@@ -118,10 +118,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   return (
     <div className="w-full h-full flex flex-col justify-between overflow-hidden bg-black/40 backdrop-blur-md">
       {/* Chat Header Actions Bar */}
-      <div className="px-4 py-2 border-b border-white/10 flex items-center justify-between glass-panel-subtle z-10">
+      <div className="px-3 sm:px-4 py-1.5 border-b border-white/10 flex items-center justify-between glass-panel-subtle z-10 shrink-0">
         <div className="flex items-center gap-2">
           <div
-            className={`w-8 h-8 rounded-full p-[1.5px] ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full p-[1.5px] ${
               isJarvis
                 ? 'bg-gradient-to-tr from-amber-500 to-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
                 : 'bg-gradient-to-tr from-pink-500 to-purple-500 shadow-[0_0_8px_rgba(244,114,182,0.4)]'
@@ -135,44 +135,44 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1">
-              <span className="text-sm font-bold text-white">{isJarvis ? 'Jarvis' : 'Alya'}</span>
+              <span className="text-xs sm:text-sm font-bold text-white">{isJarvis ? 'Jarvis' : 'Alya'}</span>
               <span className={`text-xs ${isJarvis ? 'text-amber-400' : 'text-pink-400'}`}>
                 {isJarvis ? '⚡' : '🌸'}
               </span>
             </div>
-            <span className="text-[10px] text-emerald-400 flex items-center gap-1">
+            <span className="text-[9px] sm:text-[10px] text-emerald-400 flex items-center gap-1 leading-tight">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Live AI Connected
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {isSpeaking && (
             <button
               onClick={onStopSpeaking}
-              className="px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500 text-rose-300 text-xs font-semibold flex items-center gap-1 shadow-sm animate-pulse hover:bg-rose-500/30 active:scale-95 transition-all"
+              className="px-2 py-1 rounded-full bg-rose-500/20 border border-rose-500 text-rose-300 text-[11px] font-semibold flex items-center gap-1 shadow-sm animate-pulse hover:bg-rose-500/30 active:scale-95 transition-all"
               title="Stop audio playback"
             >
-              <VolumeX size={13} />
+              <VolumeX size={12} />
               <span>Stop</span>
             </button>
           )}
           <button
             onClick={onStartVoiceCall}
-            className={`w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center active:scale-95 transition-all ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center active:scale-95 transition-all ${
               isJarvis ? 'text-amber-300 hover:bg-amber-500/20' : 'text-pink-300 hover:bg-pink-500/20'
             }`}
             title="Start voice call"
           >
-            <Phone size={15} />
+            <Phone size={14} />
           </button>
           <button
             onClick={onRetryLastMessage}
-            className="w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 hover:text-white hover:bg-purple-500/20 active:scale-95 transition-all"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 hover:text-white hover:bg-purple-500/20 active:scale-95 transition-all"
             title="Retry last response"
           >
-            <RotateCw size={14} />
+            <RotateCw size={13} />
           </button>
           <button
             onClick={() => {
@@ -180,17 +180,17 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               setSupportReason('');
               setSupportConsent(false);
             }}
-            className="w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-purple-300 hover:bg-purple-500/20 active:scale-95 transition-all"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-purple-300 hover:bg-purple-500/20 active:scale-95 transition-all"
             title="Submit conversation to support for review"
           >
-            <LifeBuoy size={14} />
+            <LifeBuoy size={13} />
           </button>
           <button
             onClick={() => setShowClearConfirm(true)}
-            className="w-8 h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full glass-panel-subtle flex items-center justify-center text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
             title="Clear conversation"
           >
-            <Trash2 size={14} />
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
@@ -353,7 +353,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-3 space-y-3">
         {(messages || []).map((msg) => {
           const isCompanion = msg.role === 'alya' || msg.role === 'jarvis' || msg.role === 'companion';
           const isMsgJarvis = msg.role === 'jarvis';
@@ -565,7 +565,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-white/10 glass-panel flex items-center gap-2 z-10"
+        className="p-2.5 sm:p-3 pb-[max(0.6rem,calc(env(safe-area-inset-bottom,0px)+0.4rem))] border-t border-white/10 glass-panel flex items-center gap-2 z-10 shrink-0"
       >
         <input
           ref={fileInputRef}
@@ -577,18 +577,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`w-9 h-9 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 transition-colors ${
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full glass-panel-subtle flex items-center justify-center text-slate-300 transition-colors shrink-0 ${
             isJarvis ? 'hover:text-amber-300 hover:bg-amber-500/20' : 'hover:text-pink-300 hover:bg-pink-500/20'
           }`}
           title="Attach image"
         >
-          <Paperclip size={16} />
+          <Paperclip size={15} />
         </button>
         <button
           type="button"
           onClick={onToggleVoice}
           disabled={recognitionState === 'starting' || recognitionState === 'stopping'}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${
             recognitionState === 'starting' || recognitionState === 'stopping'
               ? 'opacity-60 cursor-wait'
               : isListening
@@ -599,21 +599,21 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           }`}
           title={isListening ? 'Stop listening' : 'Voice input'}
         >
-          {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+          {isListening ? <MicOff size={15} /> : <Mic size={15} />}
         </button>
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={`Message ${isJarvis ? 'Jarvis' : 'Alya'}...`}
-          className={`flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm text-slate-100 placeholder:text-slate-400/80 focus:outline-none font-quicksand ${
+          className={`flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-100 placeholder:text-slate-400/80 focus:outline-none font-quicksand ${
             isJarvis ? 'focus:border-amber-500/50' : 'focus:border-pink-500/50'
           }`}
         />
         <button
           type="submit"
           disabled={!inputText.trim() && !selectedImage}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+          className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${
             inputText.trim() || selectedImage
               ? isJarvis
                 ? 'bg-gradient-to-tr from-amber-600 to-yellow-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.6)] active:scale-95'
@@ -621,7 +621,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               : 'bg-white/10 text-slate-500 cursor-not-allowed'
           }`}
         >
-          <Send size={15} />
+          <Send size={14} />
         </button>
       </form>
     </div>

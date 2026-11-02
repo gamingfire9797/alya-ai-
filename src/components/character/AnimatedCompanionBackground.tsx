@@ -40,7 +40,8 @@ export const AnimatedCompanionBackground: React.FC<AnimatedCompanionBackgroundPr
     if (!canvas || !ctx) return;
 
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.6);
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 600;
+    const dpr = Math.min(window.devicePixelRatio || 1, isMobileScreen ? 1.35 : 1.6);
     const isJarvis = character === 'jarvis';
 
     let width = 1;
@@ -49,7 +50,8 @@ export const AnimatedCompanionBackground: React.FC<AnimatedCompanionBackgroundPr
     let last = performance.now();
     let visible = !document.hidden;
 
-    const stars = Array.from({ length: 110 }, (_, i) => ({
+    const starCount = reduced ? 35 : isMobileScreen ? 65 : 110;
+    const stars = Array.from({ length: starCount }, (_, i) => ({
       x: Math.random(),
       y: Math.random(),
       r: i % 8 === 0 ? 1.6 + Math.random() * 1.4 : 0.35 + Math.random() * 0.9,
@@ -66,7 +68,7 @@ export const AnimatedCompanionBackground: React.FC<AnimatedCompanionBackgroundPr
       ? ['#00e5ff', '#ffffff', '#ffd226', '#3b82f6']
       : ['#ff269f', '#ffffff', '#ff94e8', '#c084fc', '#ffd226'];
 
-    const petalCount = 34;
+    const petalCount = reduced ? 0 : isMobileScreen ? 18 : 34;
     const petals: FloatingPetal[] = Array.from({ length: petalCount }, (_, i) => ({
       x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 600),
       y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
@@ -83,6 +85,7 @@ export const AnimatedCompanionBackground: React.FC<AnimatedCompanionBackgroundPr
 
     let lastMeteorSpawn = performance.now();
     const spawnShootingStar = (now: number) => {
+      if (reduced) return;
       if (now - lastMeteorSpawn > 1800 + Math.random() * 2000) {
         lastMeteorSpawn = now;
         const color = colors[Math.floor(Math.random() * colors.length)];

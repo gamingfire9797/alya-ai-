@@ -4,6 +4,7 @@
         <item name="colorPrimary">#FF269F</item>
         <item name="colorPrimaryDark">#030107</item>
         <item name="colorAccent">#00F0FF</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">#030107</item>
         <item name="android:navigationBarColor">#030107</item>
         <item name="android:windowBackground">#030107</item>

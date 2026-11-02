@@ -136,14 +136,14 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
   return (
     <nav
       aria-label="Companion Controls Navigation"
-      className="relative w-full max-w-xl mx-auto px-1 sm:px-2 z-20 select-none"
+      className="relative w-full max-w-xl mx-auto px-0.5 sm:px-2 z-20 select-none"
     >
       {/* Sci-Fi Navigation Pod Container */}
       <div
-        className={`relative w-full rounded-[32px] sm:rounded-full backdrop-blur-2xl px-2 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1 sm:gap-2 transition-all duration-300 border ${
+        className={`relative w-full rounded-[28px] sm:rounded-full backdrop-blur-xl px-1.5 sm:px-4 py-1.5 sm:py-2 flex items-center justify-between gap-0.5 sm:gap-2 transition-all duration-300 border ${
           isJarvis
-            ? 'bg-gradient-to-b from-[#081326]/90 via-[#040b17]/92 to-[#02050c]/96 border-cyan-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_28px_rgba(0,229,255,0.22),inset_0_1px_1px_rgba(255,255,255,0.18)]'
-            : 'bg-gradient-to-b from-[#140827]/90 via-[#0c0419]/92 to-[#070210]/96 border-pink-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_30px_rgba(255,38,159,0.25),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+            ? 'bg-gradient-to-b from-[#081326]/90 via-[#040b17]/92 to-[#02050c]/96 border-cyan-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.8),0_0_22px_rgba(0,229,255,0.2),inset_0_1px_1px_rgba(255,255,255,0.18)]'
+            : 'bg-gradient-to-b from-[#140827]/90 via-[#0c0419]/92 to-[#070210]/96 border-pink-500/35 shadow-[0_8px_28px_rgba(0,0,0,0.8),0_0_24px_rgba(255,38,159,0.22),inset_0_1px_1px_rgba(255,255,255,0.18)]'
         }`}
       >
         {/* Futuristic Top Glowing Hairline */}
@@ -157,7 +157,7 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
 
         {/* Cyber Accent Marks on Container Edges */}
         <div
-          className={`hidden sm:flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70`}
+          className="hidden sm:flex items-center gap-1 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
         >
           <div
             className={`w-1 h-3.5 rounded-full ${
@@ -171,7 +171,7 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
           />
         </div>
         <div
-          className={`hidden sm:flex items-center gap-1 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70`}
+          className="hidden sm:flex items-center gap-1 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-70"
         >
           <div
             className={`w-0.5 h-2 rounded-full ${
@@ -188,7 +188,7 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
         {/* ============================================================ */}
         {/* LEFT BUTTON GROUP (Evenly spaced surrounding circular icons) */}
         {/* ============================================================ */}
-        <div className="flex items-center justify-evenly flex-1 gap-1 sm:gap-2">
+        <div className="flex items-center justify-evenly flex-1 gap-0.5 sm:gap-2">
           {/* 1. Hold-to-Talk Button */}
           <div className="flex flex-col items-center group">
             <button
@@ -200,26 +200,26 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
                 if (isHolding) handleHoldEnd();
               }}
               onContextMenu={(e) => e.preventDefault()}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 select-none shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 select-none shadow-md border ${
                 isHolding
                   ? isJarvis
-                    ? 'bg-cyan-500 text-white border-cyan-300 shadow-[0_0_22px_rgba(0,229,255,0.9)] scale-95'
-                    : 'bg-pink-500 text-white border-pink-300 shadow-[0_0_22px_rgba(255,46,144,0.9)] scale-95'
+                    ? 'bg-cyan-500 text-white border-cyan-300 shadow-[0_0_20px_rgba(0,229,255,0.9)] scale-95'
+                    : 'bg-pink-500 text-white border-pink-300 shadow-[0_0_20px_rgba(255,46,144,0.9)] scale-95'
                   : isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/90 border-cyan-500/30 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.45)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/90 border-pink-500/30 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.45)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/90 border-cyan-500/30 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/90 border-pink-500/30 hover:border-pink-400 hover:text-white'
               }`}
               title="Hold-to-Talk (Press & HOLD to speak, release to send)"
               aria-label="Hold to talk"
             >
-              <Mic size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <Mic size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
             <span
-              className={`text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none transition-colors ${
+              className={`text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none transition-colors ${
                 isHolding
                   ? isJarvis
-                    ? 'text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]'
-                    : 'text-pink-300 font-black drop-shadow-[0_0_6px_rgba(255,46,144,0.8)]'
+                    ? 'text-cyan-300 font-black'
+                    : 'text-pink-300 font-black'
                   : 'text-slate-400 group-hover:text-slate-200'
               }`}
             >
@@ -232,17 +232,17 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
             <button
               type="button"
               onClick={onAttachImage}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
                 isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white'
               }`}
               title="Attach Image for Visual Analysis"
               aria-label="Attach Image"
             >
-              <ImageIcon size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <ImageIcon size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
-            <span className="text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200">
+            <span className="text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200">
               Image
             </span>
           </div>
@@ -252,17 +252,17 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
             <button
               type="button"
               onClick={onOpenStudio || onOpenDrawer}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
                 isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white'
               }`}
               title="Companion Studio & Customization"
               aria-label="Studio settings"
             >
-              <Sliders size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <Sliders size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
-            <span className="text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200">
+            <span className="text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200">
               Studio
             </span>
           </div>
@@ -276,7 +276,7 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
             {/* Outer Expanding Radar Wave during Active Listening */}
             {isListening && (
               <span
-                className={`absolute -inset-3 sm:-inset-4 rounded-full opacity-65 animate-ping pointer-events-none ${
+                className={`absolute -inset-2.5 sm:-inset-3.5 rounded-full opacity-65 animate-ping pointer-events-none ${
                   isJarvis ? 'bg-cyan-400' : 'bg-rose-500'
                 }`}
               />
@@ -284,21 +284,21 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
 
             {/* Orbital Tech Notched Ring (Thin dashed animated cyber orbit) */}
             <div
-              className={`absolute -inset-2 sm:-inset-2.5 rounded-full border border-dashed pointer-events-none animate-orb-ring transition-opacity duration-300 ${
+              className={`absolute -inset-1.5 sm:-inset-2 rounded-full border border-dashed pointer-events-none animate-orb-ring transition-opacity duration-300 ${
                 orbStyle.outerRingColor
               }`}
             />
 
             {/* Inner Concentric Glow Ring */}
             <div
-              className={`absolute -inset-1 sm:-inset-1.5 rounded-full border pointer-events-none transition-all duration-300 ${orbStyle.ringColor}`}
+              className={`absolute -inset-0.5 sm:-inset-1 rounded-full border pointer-events-none transition-all duration-300 ${orbStyle.ringColor}`}
             />
 
             {/* 3D Glowing Orb Button */}
             <button
               type="button"
               onClick={onToggleVoice}
-              className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-[68px] md:h-[68px] rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95 group overflow-hidden ${orbStyle.bg} ${orbStyle.glow}`}
+              className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 active:scale-95 group overflow-hidden ${orbStyle.bg} ${orbStyle.glow}`}
               title={
                 isListening
                   ? 'Active Listening (Tap to turn off)'
@@ -319,21 +319,21 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
               }
             >
               {/* Upper Specular 3D Glass Reflection Arc */}
-              <div className="absolute top-1 inset-x-2.5 sm:inset-x-3 h-4 sm:h-5 rounded-full bg-gradient-to-b from-white/65 via-white/25 to-transparent pointer-events-none" />
+              <div className="absolute top-1 inset-x-2 sm:inset-x-2.5 h-3.5 sm:h-4 rounded-full bg-gradient-to-b from-white/65 via-white/25 to-transparent pointer-events-none" />
 
               {/* Lower Subtle Inner Ambient Bounce Light */}
-              <div className="absolute bottom-1 inset-x-3 h-2.5 rounded-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
+              <div className="absolute bottom-1 inset-x-2.5 h-2 rounded-full bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
 
               {/* Central Crisp Icon with Drop Shadow */}
               <div className="relative z-10 transition-transform duration-200 group-hover:scale-110">
                 {isListening ? (
                   <MicOff
-                    size={26}
+                    size={22}
                     className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
                   />
                 ) : (
                   <Mic
-                    size={26}
+                    size={22}
                     className="text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
                   />
                 )}
@@ -343,7 +343,7 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
 
           {/* Micro Status Kicker under the Orb */}
           <span
-            className={`text-[9px] font-black tracking-widest uppercase mt-1 leading-none select-none transition-colors ${orbStyle.labelColor}`}
+            className={`text-[8px] sm:text-[9px] font-black tracking-widest uppercase mt-0.5 leading-none select-none transition-colors ${orbStyle.labelColor}`}
           >
             {orbStyle.label}
           </span>
@@ -352,23 +352,23 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
         {/* ============================================================ */}
         {/* RIGHT BUTTON GROUP (Evenly spaced surrounding circular icons)*/}
         {/* ============================================================ */}
-        <div className="flex items-center justify-evenly flex-1 gap-1 sm:gap-2">
+        <div className="flex items-center justify-evenly flex-1 gap-0.5 sm:gap-2">
           {/* 4. Voice Call / Visualizer Screen Button */}
           <div className="flex flex-col items-center group">
             <button
               type="button"
               onClick={onOpenVoice}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
                 isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white'
               }`}
               title="Voice Call & Audio Visualizer Screen"
               aria-label="Voice screen"
             >
-              <Sparkles size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <Sparkles size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
-            <span className="text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200">
+            <span className="text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200">
               Voice
             </span>
           </div>
@@ -378,17 +378,17 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
             <button
               type="button"
               onClick={onOpenChat}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
                 isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white'
               }`}
               title="Open Full Chat Interface"
               aria-label="Open chat"
             >
-              <MessageSquare size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <MessageSquare size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
-            <span className="text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200">
+            <span className="text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200">
               Chat
             </span>
           </div>
@@ -398,17 +398,17 @@ export const FuturisticBottomBar: React.FC<FuturisticBottomBarProps> = ({
             <button
               type="button"
               onClick={onOpenDrawer}
-              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 shadow-md border ${
                 isJarvis
-                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white hover:shadow-[0_0_18px_rgba(0,229,255,0.4)]'
-                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white hover:shadow-[0_0_18px_rgba(255,46,144,0.4)]'
+                  ? 'bg-gradient-to-b from-[#0a1833]/90 to-[#040e20]/95 text-cyan-300/85 border-cyan-500/25 hover:border-cyan-400 hover:text-white'
+                  : 'bg-gradient-to-b from-[#1b0d2e]/90 to-[#0e0618]/95 text-pink-300/85 border-pink-500/25 hover:border-pink-400 hover:text-white'
               }`}
               title="Open System Menu & Tools"
               aria-label="Open menu"
             >
-              <Menu size={18} className="shrink-0 transition-transform group-hover:scale-110" />
+              <Menu size={16} className="shrink-0 transition-transform group-hover:scale-110" />
             </button>
-            <span className="text-[8px] font-bold tracking-wider uppercase mt-1 leading-none select-none text-slate-400 group-hover:text-slate-200">
+            <span className="text-[7.5px] sm:text-[8px] font-bold tracking-wider uppercase mt-0.5 leading-none select-none text-slate-400 group-hover:text-slate-200">
               Menu
             </span>
           </div>

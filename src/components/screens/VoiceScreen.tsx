@@ -157,20 +157,20 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
       />
 
       {/* Top Header */}
-      <div className="relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 pt-3 pb-1 flex flex-col gap-2">
-        <div className="w-full flex items-center justify-between">
+      <div className="relative z-20 w-full max-w-4xl lg:max-w-5xl mx-auto px-3 sm:px-6 pt-2 pb-1 flex flex-col gap-1.5 shrink-0">
+        <div className="w-full flex items-center justify-between gap-1">
           <button
             type="button"
             onClick={onEndCall}
-            className="w-10 h-10 rounded-2xl bg-black/40 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
             title="End Call and return to Home"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={18} />
           </button>
 
-          <div className="text-center flex flex-col items-center">
+          <div className="text-center flex flex-col items-center min-w-0">
             <h1
-              className={`text-lg sm:text-xl font-bold tracking-wide font-comfortaa flex items-center gap-1.5 ${
+              className={`text-base sm:text-lg font-bold tracking-wide font-comfortaa flex items-center gap-1.5 ${
                 isJarvis
                   ? 'text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-cyan-300 to-blue-400 drop-shadow-[0_0_12px_rgba(0,229,255,0.4)]'
                   : 'text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-200 to-purple-300 drop-shadow-[0_0_12px_rgba(255,38,159,0.4)]'
@@ -178,9 +178,9 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             >
               {isJarvis ? <span>⚡ Jarvis Voice</span> : <span>Alya Voice 🌸</span>}
             </h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1.5">
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-1.5 h-1.5 rounded-full ${
                   isListening
                     ? 'bg-rose-400 animate-ping'
                     : isThinking
@@ -190,7 +190,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
                     : 'bg-emerald-400'
                 }`}
               />
-              <span className="text-[10px] text-slate-300 tracking-wider font-medium">
+              <span className="text-[9px] sm:text-[10px] text-slate-300 tracking-wider font-medium leading-tight">
                 {isListening
                   ? 'Listening to you...'
                   : isThinking
@@ -204,12 +204,12 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {onOpenAutoFeatures && (
               <button
                 type="button"
                 onClick={onOpenAutoFeatures}
-                className={`h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${
+                className={`h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${
                   autoFeatures?.autoListen
                     ? isJarvis
                       ? 'border-cyan-400 text-cyan-300'
@@ -218,7 +218,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
                 }`}
                 title="Auto Features Menu"
               >
-                <Sliders size={14} className={isJarvis ? 'text-cyan-400' : 'text-pink-400'} />
+                <Sliders size={13} className={isJarvis ? 'text-cyan-400' : 'text-pink-400'} />
                 <span className="text-[10px] font-bold hidden sm:inline">Auto</span>
               </button>
             )}
@@ -226,7 +226,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             <button
               type="button"
               onClick={() => setShowVoiceStudio((prev) => !prev)}
-              className={`h-9 px-2.5 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1.5 transition-all active:scale-95 shadow-md ${
+              className={`h-8 px-2 rounded-xl bg-black/45 border backdrop-blur-md flex items-center gap-1 transition-all active:scale-95 shadow-md ${
                 showVoiceStudio
                   ? isJarvis
                     ? 'border-cyan-400 bg-cyan-950/60 text-cyan-200'
@@ -237,17 +237,17 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
               }`}
               title="Voice Profile Tuning"
             >
-              <span className="text-[11px] font-semibold">Tuning</span>
+              <span className="text-[10px] font-semibold">Tuning</span>
             </button>
 
             {onOpenChat && (
               <button
                 type="button"
                 onClick={onOpenChat}
-                className="w-9 h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-black/45 border border-white/10 hover:border-white/25 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
                 title="Full Chat History"
               >
-                <MessageSquare size={16} />
+                <MessageSquare size={15} />
               </button>
             )}
           </div>
@@ -255,13 +255,13 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
 
         {onSwitchCompanion && (
           <div className="flex items-center justify-center">
-            <div className="flex items-center p-1 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg">
+            <div className="flex items-center p-0.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md shadow-lg">
               <button
                 type="button"
                 onClick={() => onSwitchCompanion('alya')}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${
                   !isJarvis
-                    ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_14px_rgba(255,38,159,0.55)]'
+                    ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-[0_0_12px_rgba(255,38,159,0.5)]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -271,9 +271,9 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
               <button
                 type="button"
                 onClick={() => onSwitchCompanion('jarvis')}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold transition-all ${
                   isJarvis
-                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_14px_rgba(0,229,255,0.55)]'
+                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(0,229,255,0.5)]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -286,7 +286,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
       </div>
 
       {/* Center Stage: Holographic Avatar & Wave */}
-      <div className="relative z-10 flex-1 min-h-0 w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 my-auto">
+      <div className="relative z-10 flex-1 min-h-[140px] w-full max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center justify-center px-2 sm:px-6 overflow-hidden my-0.5">
         <HolographicAvatar
           character={character}
           expression={expression}
@@ -300,9 +300,9 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
           particleStyle={activeParticle}
           showPedestal={true}
           userName={userName}
-          className="w-full"
+          className="w-full h-full"
         />
-        <div className="w-56 -mt-1 flex justify-center">
+        <div className="w-48 -mt-1 flex justify-center shrink-0">
           <LiveAudioWave
             active={isListening || isSpeaking}
             type="bars"
@@ -312,17 +312,17 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
       </div>
 
       {/* Live Transcript / Subtitle Box */}
-      <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-8 mb-2 z-20">
+      <div className="w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 mb-1.5 z-20 shrink-0">
         <div
-          className={`rounded-2xl border backdrop-blur-xl p-3 shadow-xl transition-all ${
+          className={`rounded-2xl border backdrop-blur-xl p-2.5 shadow-xl transition-all ${
             isJarvis
-              ? 'bg-black/35 border-cyan-500/25 shadow-[0_4px_24px_rgba(0,229,255,0.08)]'
-              : 'bg-black/35 border-pink-500/25 shadow-[0_4px_24px_rgba(255,38,159,0.08)]'
+              ? 'bg-black/40 border-cyan-500/25 shadow-[0_4px_20px_rgba(0,229,255,0.08)]'
+              : 'bg-black/40 border-pink-500/25 shadow-[0_4px_20px_rgba(255,38,159,0.08)]'
           }`}
         >
           {isListening && (
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
               <p className="text-xs text-rose-200 font-medium truncate">
                 <span className="font-bold uppercase tracking-wider text-[10px] text-rose-300 mr-1.5">
                   Listening:
@@ -334,7 +334,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
 
           {isThinking && !isListening && !isSpeaking && (
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0" />
               <p className="text-xs text-cyan-200 font-medium italic">
                 {isJarvis ? 'Jarvis is formulating response...' : 'Alya is thinking...'}
               </p>
@@ -348,7 +348,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
                 className={`mt-0.5 shrink-0 ${isJarvis ? 'text-cyan-400' : 'text-pink-400'}`}
               />
               <p
-                className={`text-xs font-semibold leading-relaxed line-clamp-3 ${
+                className={`text-xs font-semibold leading-snug line-clamp-2 ${
                   isJarvis ? 'text-cyan-100' : 'text-pink-100'
                 }`}
               >
@@ -358,7 +358,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
           )}
 
           {!isListening && !isSpeaking && !isThinking && (
-            <div className="text-center py-0.5 text-xs text-slate-300 font-quicksand">
+            <div className="text-center py-0.5 text-[11px] text-slate-300 font-quicksand">
               {isAutoVoiceActive
                 ? `Hands-free active. ${isJarvis ? 'Jarvis' : 'Alya'} will automatically listen after replying.`
                 : `${isJarvis ? 'Jarvis' : 'Alya'} is ready. Tap center mic for Auto Voice, or use Hold-to-Talk.`}
@@ -368,15 +368,15 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
       </div>
 
       {/* Bottom Action Controls */}
-      <div className="relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-4 sm:px-8 pb-3 pt-0 flex flex-col gap-2.5">
+      <div className="relative z-20 w-full max-w-3xl lg:max-w-4xl mx-auto px-3 sm:px-6 pb-[max(0.5rem,calc(env(safe-area-inset-bottom,0px)+0.35rem))] pt-0 flex flex-col gap-2 shrink-0">
         {micErrorMessage && (
-          <div className="flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-amber-950/80 border border-amber-500/35 text-amber-200 backdrop-blur-md gap-2">
+          <div className="flex items-center justify-between text-xs px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/35 text-amber-200 backdrop-blur-md gap-2">
             <span className="text-[11px] leading-snug break-words flex-1">{micErrorMessage}</span>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={onToggleListening}
-                className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors"
+                className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline py-0.5 px-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 transition-colors"
               >
                 Retry
               </button>
@@ -394,20 +394,20 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
         )}
 
         {selectedImage && (
-          <div className="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-black/60 border border-white/15 w-fit">
-            <img src={selectedImage} alt="Attachment" className="w-8 h-8 rounded-lg object-cover" />
-            <span className="text-[11px] text-slate-300">Image attached for call</span>
+          <div className="flex items-center gap-2 p-1 px-2.5 rounded-xl bg-black/60 border border-white/15 w-fit">
+            <img src={selectedImage} alt="Attachment" className="w-7 h-7 rounded-lg object-cover" />
+            <span className="text-[10px] text-slate-300">Image attached for call</span>
             <button
               type="button"
               onClick={() => setSelectedImage(null)}
               className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white"
             >
-              <X size={12} />
+              <X size={11} />
             </button>
           </div>
         )}
 
-        <div className="w-full flex items-center justify-between px-2">
+        <div className="w-full flex items-center justify-between px-1">
           {/* 1. Hold-to-Talk Control */}
           <button
             type="button"
@@ -422,7 +422,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             onPointerCancel={() => onHoldToTalkEnd?.()}
             onPointerLeave={() => onHoldToTalkEnd?.()}
             onContextMenu={(e) => e.preventDefault()}
-            className={`h-10 px-2.5 rounded-2xl bg-black/50 border backdrop-blur-md flex items-center gap-1.5 transition-all select-none cursor-pointer active:scale-95 shadow-md ${
+            className={`h-9 sm:h-10 px-2.5 rounded-xl bg-black/50 border backdrop-blur-md flex items-center gap-1.5 transition-all select-none cursor-pointer active:scale-95 shadow-md ${
               isJarvis
                 ? 'border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:bg-cyan-950/40'
                 : 'border-pink-500/30 hover:border-pink-400 text-pink-300 hover:bg-pink-950/40'
@@ -438,14 +438,14 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             type="button"
             onClick={onStopSpeaking}
             disabled={!isSpeaking}
-            className={`w-10 h-10 rounded-2xl bg-black/45 border backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md ${
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/45 border backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md ${
               isSpeaking
                 ? 'border-rose-500/50 text-rose-300 hover:bg-rose-950/40'
                 : 'border-white/10 text-slate-500 opacity-50 cursor-not-allowed'
             }`}
             title="Stop voice output"
           >
-            <Square size={16} />
+            <Square size={15} />
           </button>
 
           {/* 3. Prominent Glowing Center Mic = Auto Voice Toggle */}
@@ -453,20 +453,20 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             type="button"
             onClick={onToggleListening}
             disabled={recognitionState === 'starting' || recognitionState === 'stopping'}
-            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-95 cursor-pointer relative group ${
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-2xl transition-all active:scale-95 cursor-pointer relative group ${
               recognitionState === 'starting' || recognitionState === 'stopping'
                 ? 'opacity-60 cursor-wait'
                 : isListening
-                ? 'bg-rose-500 text-white shadow-[0_0_30px_#f43f5e] animate-pulse ring-4 ring-rose-400/50'
+                ? 'bg-rose-500 text-white shadow-[0_0_26px_#f43f5e] animate-pulse ring-4 ring-rose-400/50'
                 : isSpeaking
-                ? 'bg-purple-600 text-white shadow-[0_0_25px_#9333ea] ring-4 ring-purple-400/50'
+                ? 'bg-purple-600 text-white shadow-[0_0_22px_#9333ea] ring-4 ring-purple-400/50'
                 : isThinking
-                ? 'bg-amber-500 text-white shadow-[0_0_25px_#f59e0b] animate-pulse ring-4 ring-amber-400/50'
+                ? 'bg-amber-500 text-white shadow-[0_0_22px_#f59e0b] animate-pulse ring-4 ring-amber-400/50'
                 : isAutoVoiceActive
-                ? 'bg-emerald-600 text-white shadow-[0_0_25px_#10b981] ring-4 ring-emerald-400/50 animate-pulse'
+                ? 'bg-emerald-600 text-white shadow-[0_0_22px_#10b981] ring-4 ring-emerald-400/50 animate-pulse'
                 : isJarvis
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_24px_rgba(0,229,255,0.7)] hover:shadow-[0_0_35px_rgba(0,229,255,0.9)] ring-2 ring-cyan-300/40'
-                : 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_24px_rgba(255,38,159,0.7)] hover:shadow-[0_0_35px_rgba(255,38,159,0.9)] ring-2 ring-pink-300/40'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-[0_0_22px_rgba(0,229,255,0.7)] ring-2 ring-cyan-300/40'
+                : 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-[0_0_22px_rgba(255,38,159,0.7)] ring-2 ring-pink-300/40'
             }`}
             title={
               isListening
@@ -476,7 +476,7 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
                 : 'Tap to start Auto Voice mode'
             }
           >
-            {isListening ? <MicOff size={24} /> : <Mic size={24} />}
+            {isListening ? <MicOff size={22} /> : <Mic size={22} />}
             <span
               className={`absolute -inset-1 rounded-full opacity-60 animate-ping pointer-events-none ${
                 isListening
@@ -494,29 +494,29 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
           <button
             type="button"
             onClick={onOpenChat}
-            className="w-10 h-10 rounded-2xl bg-black/45 border border-white/10 hover:border-white/30 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-black/45 border border-white/10 hover:border-white/30 backdrop-blur-md flex items-center justify-center text-slate-300 hover:text-white transition-all active:scale-95 shadow-md"
             title="Open Full Chat"
           >
-            <MessageSquare size={18} />
+            <MessageSquare size={16} />
           </button>
 
           {/* 5. End Call */}
           <button
             type="button"
             onClick={onEndCall}
-            className="w-10 h-10 rounded-2xl bg-rose-950/60 border border-rose-500/40 hover:border-rose-400 text-rose-300 hover:text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-950/60 border border-rose-500/40 hover:border-rose-400 text-rose-300 hover:text-white backdrop-blur-md flex items-center justify-center transition-all active:scale-95 shadow-md"
             title="End Call and return to Home"
           >
-            <PhoneOff size={18} />
+            <PhoneOff size={16} />
           </button>
         </div>
 
         <form
           onSubmit={handleSend}
-          className={`rounded-full p-1 pl-4 flex items-center gap-2 border backdrop-blur-xl shadow-xl transition-all focus-within:ring-2 ${
+          className={`rounded-full p-1 pl-3.5 flex items-center gap-1.5 border backdrop-blur-xl shadow-xl transition-all focus-within:ring-2 ${
             isJarvis
-              ? 'bg-black/55 border-cyan-500/30 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_4px_25px_rgba(0,229,255,0.1)]'
-              : 'bg-black/55 border-pink-500/30 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_4px_25px_rgba(255,38,159,0.1)]'
+              ? 'bg-black/55 border-cyan-500/30 focus-within:ring-cyan-500/40 focus-within:border-cyan-400 shadow-[0_4px_20px_rgba(0,229,255,0.1)]'
+              : 'bg-black/55 border-pink-500/30 focus-within:ring-pink-500/40 focus-within:border-pink-400 shadow-[0_4px_20px_rgba(255,38,159,0.1)]'
           }`}
         >
           <input
@@ -524,9 +524,9 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder={`Message or ask ${isJarvis ? 'Jarvis' : 'Alya'}...`}
-            className="flex-1 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-xs text-white placeholder:text-slate-400 focus:outline-none py-1"
           />
-          <div className="flex items-center gap-1.5 pr-1">
+          <div className="flex items-center gap-1 pr-0.5 shrink-0">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -538,11 +538,11 @@ export const VoiceScreen: React.FC<VoiceScreenProps> = ({
             <button
               type="submit"
               disabled={!inputText.trim() && !selectedImage}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                 inputText.trim() || selectedImage
                   ? isJarvis
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_16px_rgba(0,229,255,0.6)] active:scale-95'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold shadow-[0_0_16px_rgba(255,38,159,0.6)] active:scale-95'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold shadow-[0_0_14px_rgba(0,229,255,0.6)] active:scale-95'
+                    : 'bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold shadow-[0_0_14px_rgba(255,38,159,0.6)] active:scale-95'
                   : 'bg-white/10 text-slate-500 cursor-not-allowed'
               }`}
             >

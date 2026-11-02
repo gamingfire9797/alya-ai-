@@ -1668,6 +1668,13 @@ export default function App() {
             onOpenTools={() => setCurrentScreen('phone_control')}
             onOpenPersonality={() => setShowStudioModal(true)}
             onOpenAutoFeatures={() => setShowAutoFeaturesModal(true)}
+            onOpenWorkMode={() => setCurrentScreen('work')}
+            floatingMiniVisible={floatingMiniVisible}
+            onToggleFloatingMini={() => {
+              const next = !floatingMiniVisible;
+              setFloatingMiniVisible(next);
+              handleUpdateSettings({ floatingMiniEnabled: next });
+            }}
             autoFeatures={autoFeatures}
             coreCustomization={coreCustomization}
             onSpeakMessage={handleSpeakMessage}
@@ -1993,11 +2000,11 @@ export default function App() {
     currentScreen !== 'work';
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#030107] text-white flex items-center justify-center select-none">
+    <div className="app-viewport relative w-full h-[100dvh] min-h-[100svh] max-h-[100dvh] max-w-[100vw] overflow-hidden bg-[#030107] text-white flex items-center justify-center select-none">
       <div
         className={`relative w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${
           isPhoneFrame
-            ? 'max-w-[430px] max-h-[92vh] rounded-[44px] border-[10px] border-[#181822] shadow-[0_25px_60px_rgba(0,0,0,0.85)] ring-1 ring-white/10 my-auto'
+            ? 'lg:max-w-[430px] lg:max-h-[92dvh] lg:rounded-[44px] lg:border-[10px] lg:border-[#181822] lg:shadow-[0_25px_60px_rgba(0,0,0,0.85)] lg:ring-1 lg:ring-white/10 lg:my-auto'
             : 'max-w-none h-full'
         }`}
       >
@@ -2068,7 +2075,7 @@ export default function App() {
           />
         )}
 
-        <main className="relative flex-1 w-full h-full overflow-hidden flex flex-col z-10">
+        <main className="relative flex-1 min-h-0 w-full h-full overflow-hidden flex flex-col z-10">
           {renderCurrentScreen()}
         </main>
 
